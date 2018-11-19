@@ -21,5 +21,17 @@
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Estore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniMqttClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Progmem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
