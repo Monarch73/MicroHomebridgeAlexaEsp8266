@@ -8,6 +8,7 @@
 #include <ESPAsyncTCP.h>
 #include <async_config.h>
 #include <AsyncPrinter.h>
+#include <map>
 
 #define MQTTSTATUS_CONNACK 0x20
 #define MQTTSTATUS_SUBSCRIBEACK 0x90
@@ -179,15 +180,15 @@ public:
 		return true; 
 	}
 
-	void sendDiscoveryResponse(char *msgId, char *deviceList[])
+	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
 	{
 		Serial.printf("Sending response....");
 		int lenTopic = addResponseTopic(_sendbuffer);
 		int lenPayload = addDiscoveryHeader(_sendbuffer, msgId);
-		for (int i = 0; deviceList[i] != 0; i++)
+		for (std::map<char *, int>::iterator it=deviceList.begin(); it != deviceList.end(); )
 		{
-			lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, deviceList[i],i);
-			if (deviceList[i + 1] != 0)
+			lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, it->first, it->second);
+			if (++it != deviceList.end())
 			{
 				_sendbuffer[lenTopic] = ',';
 				lenPayload ++;
@@ -201,10 +202,10 @@ public:
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
 		len += addDiscoveryHeader(_sendbuffer + len, msgId); 
-		for (int i = 0; deviceList[i] != 0; i++)
+		for (std::map<char *, int>::iterator it = deviceList.begin(); it != deviceList.end(); )
 		{
-			len += addDiscoveryDevice(_sendbuffer + len, deviceList[i],i);
-			if (deviceList[i + 1] != 0)
+			len += addDiscoveryDevice(_sendbuffer + lenTopic, it->first, it->second);
+			if (++it != deviceList.end())
 			{
 				_sendbuffer[len++] = ',';
 			}

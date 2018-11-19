@@ -185,10 +185,6 @@ void connect() {
 
 void message(String& message)
 {
-	char*liste[] = {
-		(char*)"Waffel",
-		(char*)"Hamburger",
-		(char *)0};
 	int pos;
 	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";//(char*)"\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
@@ -196,10 +192,12 @@ void message(String& message)
 	Serial.println(message.c_str());
 	if ((pos = message.indexOf(discovery)) > 0)
 	{
+		ui->RefreshList();
+
 		Serial.println("discover response");
 		String msgId = message.substring(pos + strlen(discovery), pos + strlen(discovery) + 36);
 		Serial.println(msgId);
-		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), liste);
+		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), WebInterface::deviceList);
 	}
 	else if ((pos = message.indexOf(turn)) > 0)
 	{
