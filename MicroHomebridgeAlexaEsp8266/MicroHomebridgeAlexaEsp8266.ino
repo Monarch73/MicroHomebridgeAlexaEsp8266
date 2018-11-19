@@ -5,6 +5,7 @@
 */
 
 // the setup function runs once when you press reset or power the board
+#include <ESP8266HTTPClient.h>
 #include <ir_Trotec.h>
 #include <ir_Toshiba.h>
 #include <ir_Samsung.h>
@@ -210,6 +211,9 @@ void setup() {
 	Serial.begin(115200);
 	int zahl = analogRead(A0);
 	Serial.println(zahl);
+	myIr = new IRsend(3);
+	myIr->begin();
+	mySwitch.enableTransmit(2);
 	estore = new Estore(); // &estore2;
 	if (zahl > 350)
 	{
@@ -236,6 +240,7 @@ void setup() {
 	mqtt->setCallback(message);
 	web = new ESP8266WebServer(80);
 	ui = new WebInterface(estore, web, switchCallBack);
+	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
 	on(WrapperHandleAngular,"/", HTTP_ANY);
 	on(WrapperHandleAngular, "styles.89c7d201f868ab33b8ed.bundle.css", HTTP_ANY);
 	on(WrapperHandleAngular, "inline.f41fde31ea1a5cf9edc6.bundle.js", HTTP_ANY);
@@ -253,6 +258,8 @@ void setup() {
 }
 
 void loop() {
+	volatile char *urlToCall2;
+
 	delay(10);
 	if (mqtt != 0)
 	{
@@ -262,5 +269,20 @@ void loop() {
 	if (web != 0)
 	{
 		web->handleClient();
+	}
+
+	if ((urlToCall2 = ui->GetUrlToCall()) != NULL)
+	{
+		Serial.print("Calling ");
+		Serial.print((char *)urlToCall2);
+		HTTPClient http;
+		bool ret = http.begin((char *)urlToCall2);
+		Serial.println(ret);
+		int ret2 = http.GET();
+		Serial.print(" ");
+		Serial.println(ret2);
+		http.end();
+		ui->SetUrlToCall(NULL);
+		free((void *)urlToCall2);
 	}
 }

@@ -12,8 +12,15 @@ private:
 	Estore* _estore;
 	ESP8266WebServer* _webserver;
 	bool lightStates[N_DIPSWITCHES];
-	volatile char *_urlToCall;
+	volatile char *_urlToCall = NULL;
 	std::function<void(dipswitch,bool)> _callBackSwitch;
+
+	int addStringToMemory(char *buf, char *txt)
+	{
+		int pos2=0;
+		memcpy(buf, txt, (pos2=strlen(txt)+1));
+		return pos2;
+	}
 
 	void parseStringNumbers(String& data, uint16_t*numbers)
 	{
@@ -82,7 +89,7 @@ public:
 		}
 	}
 
-		void HandleJsonList()
+	void HandleJsonList()
 	{
 		typedef struct dipswitches_struct dipswitch;
 		dipswitch dp;
