@@ -4,3 +4,9 @@
 [submodule "libraries/AsyncTCP"]
 	path = libraries/AsyncTCP
 	url = https://github.com/me-no-dev/ESPAsyncTCP.git
+[submodule "libraries/IRRemote"]
+	path = libraries/IRRemote
+	url = https://github.com/markszabo/IRremoteESP8266.git
+[submodule "libraries/rcswitch"]
+	path = libraries/rcswitch
+	url = https://github.com/sui77/rc-switch.git

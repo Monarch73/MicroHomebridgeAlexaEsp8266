@@ -1,5 +1,4 @@
-#ifndef _WCFNREQUESTHANDLER_h
-#define _WCFNREQUESTHANDLER_h
+#pragma once
 
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "Arduino.h"
@@ -141,4 +140,3 @@ protected:
 	HTTPMethod _method;
 	char _wildcard;
 };
-#endif

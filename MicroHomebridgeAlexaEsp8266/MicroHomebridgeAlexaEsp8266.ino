@@ -5,6 +5,28 @@
 */
 
 // the setup function runs once when you press reset or power the board
+#include <ir_Trotec.h>
+#include <ir_Toshiba.h>
+#include <ir_Samsung.h>
+#include <ir_Panasonic.h>
+#include <ir_NEC.h>
+#include <ir_Mitsubishi.h>
+#include <ir_Midea.h>
+#include <ir_Magiquest.h>
+#include <ir_LG.h>
+#include <ir_Kelvinator.h>
+#include <ir_Haier.h>
+#include <ir_Gree.h>
+#include <ir_Fujitsu.h>
+#include <ir_Daikin.h>
+#include <ir_Coolix.h>
+#include <ir_Argo.h>
+#include <IRutils.h>
+#include <IRtimer.h>
+#include <IRsend.h>
+#include <IRremoteESP8266.h>
+#include <IRrecv.h>
+#include <RCSwitch.h>
 #include <tcp_axtls.h>
 #include <SyncClient.h>
 #include <ESPAsyncTCPbuffer.h>
@@ -21,6 +43,7 @@
 #include "WebInterface.h"
 #include "Estore.h"
 #include "WcFnRequestHandler.h"
+#include "RemoteControl.h"
 
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
@@ -35,11 +58,22 @@ MiniMqttClient* mqtt=0;
 Estore* estore;
 ESP8266WebServer* web = 0;
 WebInterface* ui = 0;
+RemoteControl* remote = 0;
+RCSwitch mySwitch = RCSwitch();
+IRsend *myIr;
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
 
 void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcard = '*') {
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
+}
+
+void switchCallBack(dipswitch dp, bool on)
+{
+	if (remote !=0 )
+	{
+		remote->Send(&dp, on);
+	}
 }
 
 void WrapperHandleAngular(WcFnRequestHandler *handler, String requestUri, HTTPMethod method)
@@ -110,12 +144,11 @@ void EnterApMode()
 	Serial.print("AP IP address: ");
 	Serial.println(myIP);
 	web = new ESP8266WebServer(80);
-	ui = new WebInterface(estore, web);
+	ui = new WebInterface(estore, web, switchCallBack);
+	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
 	web->on("/", HTTP_GET, WrapperSetupRoot);
 	web->on("/setup", HTTP_POST, WrapperSetupSSID);
 	web->begin();
-
-
 }
 
 void messageReceived(String &topic, String &payload) {
@@ -202,7 +235,7 @@ void setup() {
 	mqtt = new MiniMqttClient((char *)mqtt_server, mqtt_port, (char *)estore->homebridgeUsername, (char *)estore->homebridgeUsername, estore->homebrdigePassword);
 	mqtt->setCallback(message);
 	web = new ESP8266WebServer(80);
-	ui = new WebInterface(estore, web);
+	ui = new WebInterface(estore, web, switchCallBack);
 	on(WrapperHandleAngular,"/", HTTP_ANY);
 	on(WrapperHandleAngular, "styles.89c7d201f868ab33b8ed.bundle.css", HTTP_ANY);
 	on(WrapperHandleAngular, "inline.f41fde31ea1a5cf9edc6.bundle.js", HTTP_ANY);

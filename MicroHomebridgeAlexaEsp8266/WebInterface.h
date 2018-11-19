@@ -1,7 +1,10 @@
+#pragma once
 #include <ESP8266WebServer.h>
 #include "Progmem.h"
 #include "Estore.h"
 #include "WcFnRequestHandler.h"
+
+typedef struct dipswitches_struct dipswitch;
 
 class WebInterface
 {
@@ -9,10 +12,11 @@ private:
 	Estore* _estore;
 	ESP8266WebServer* _webserver;
 	bool lightStates[N_DIPSWITCHES];
+	volatile char *_urlToCall;
+	std::function<void(dipswitch,bool)> _callBackSwitch;
 
 	void parseStringNumbers(String& data, uint16_t*numbers)
 	{
-		typedef struct dipswitches_struct dipswitch;
 		dipswitch dp;
 
 		Serial.println("parsing " + data);
@@ -36,10 +40,13 @@ private:
 	}
 
 public:
-	WebInterface(Estore* estore, ESP8266WebServer* web)
+
+	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch,bool)> callbackSwitch)
 	{
 		this->_estore = estore;
 		this->_webserver = web;
+		this->_urlToCall = 0;
+		this->_callBackSwitch = callbackSwitch;
 	}
 
 	void HandleAngular(WcFnRequestHandler *handler, String requestUri, HTTPMethod method) 
@@ -215,12 +222,12 @@ public:
 					{
 						if (onoff == 1)
 						{
-	//						RemoteControl::Send(&dp, true);
+							this->_callBackSwitch(dp, true);
 							lightStates[i] = true;
 						}
 						else
 						{
-	//						RemoteControl::Send(&dp, false);
+							this->_callBackSwitch(dp, false);
 							lightStates[i] = false;
 						}
 					}
@@ -256,5 +263,15 @@ public:
 		strcpy_P(setupoutputbuffer, HTML_HEADER_SETUP);
 		strcat_P(setupoutputbuffer, HTML_SSIDOK);
 		this->_webserver->send(200, "text/html", setupoutputbuffer);
+	}
+
+	void SetUrlToCall(char * urlToCall)
+	{
+		this->_urlToCall = urlToCall;
+	}
+
+	volatile char *GetUrlToCall() 
+	{
+		return _urlToCall;
 	}
 };

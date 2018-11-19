@@ -1,6 +1,4 @@
-#ifndef _Estore_h
-#define _Estore_h
-
+#pragma once
 #define N_DIPSWITCHES 30
 #define N_CHAR_SSID   36
 #define N_CHAR_PASSWORD 80
@@ -422,4 +420,3 @@ public:
 		fs.close();
 	}
 };
-#endif
