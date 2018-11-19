@@ -20,6 +20,7 @@
 #include "MiniMqttClient.h"
 #include "WebInterface.h"
 #include "Estore.h"
+#include "WcFnRequestHandler.h"
 
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
@@ -35,6 +36,20 @@ Estore* estore;
 ESP8266WebServer* web = 0;
 WebInterface* ui = 0;
 
+typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
+
+void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcard = '*') {
+	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
+}
+
+void WrapperHandleAngular(WcFnRequestHandler *handler, String requestUri, HTTPMethod method)
+{
+	if (ui != 0)
+	{
+		ui->HandleAngular(handler, requestUri, method);
+	}
+}
+
 void WrapperSetupRoot()
 {
 	if (ui!=0)
@@ -48,6 +63,38 @@ void WrapperSetupSSID()
 	if (ui != 0)
 	{
 		ui->handleSetupSSID();
+	}
+}
+
+void WrapperHandleJsonList()
+{
+	if (ui != 0)
+	{
+		ui->HandleJsonList();
+	}
+}
+
+void WrapperHandleEStore()
+{
+	if (ui != 0)
+	{
+		ui->HandleEStore();
+	}
+}
+
+void WrapperHandleEDelete()
+{
+	if (ui != 0)
+	{
+		ui->HandleEDelete();
+	}
+}
+
+void WarpperHandleESocket()
+{
+	if (ui != 0)
+	{
+		ui->HandleESocket();
 	}
 }
 
@@ -154,6 +201,22 @@ void setup() {
 	//mqtt = new MiniMqttClient((char *)mqtt_server, mqtt_port, (char *)mqtt_clientId, (char *)mqtt_username, (char *)mqtt_password);
 	mqtt = new MiniMqttClient((char *)mqtt_server, mqtt_port, (char *)estore->homebridgeUsername, (char *)estore->homebridgeUsername, estore->homebrdigePassword);
 	mqtt->setCallback(message);
+	web = new ESP8266WebServer(80);
+	ui = new WebInterface(estore, web);
+	on(WrapperHandleAngular,"/", HTTP_ANY);
+	on(WrapperHandleAngular, "styles.89c7d201f868ab33b8ed.bundle.css", HTTP_ANY);
+	on(WrapperHandleAngular, "inline.f41fde31ea1a5cf9edc6.bundle.js", HTTP_ANY);
+	on(WrapperHandleAngular, "polyfills.5b59249e2a37b3779465.bundle.js", HTTP_ANY);
+	on(WrapperHandleAngular, "main.703350806a72f38a4374.bundle.js", HTTP_ANY);
+	web->on("/jsonList", HTTP_GET, WrapperHandleJsonList);
+	web->on("/estore", HTTP_POST , WrapperHandleEStore);
+	web->on("/edelete", HTTP_GET, WrapperHandleEDelete);
+	web->on("/esocket", HTTP_GET, WarpperHandleESocket);
+	const char * headerkeys[] = { "User-Agent","Cookie", "If-Modified-Since" };
+	size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
+	//ask server to track these headers
+	web->collectHeaders(headerkeys, headerkeyssize);
+	web->begin();
 }
 
 void loop() {

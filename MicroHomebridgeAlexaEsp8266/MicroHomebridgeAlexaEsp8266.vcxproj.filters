@@ -33,5 +33,8 @@
     <ClInclude Include="WebInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WcFnRequestHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

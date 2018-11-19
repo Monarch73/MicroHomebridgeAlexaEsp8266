@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _Estore_h
+#define _Estore_h
+
 #define N_DIPSWITCHES 30
 #define N_CHAR_SSID   36
 #define N_CHAR_PASSWORD 80
@@ -306,5 +308,118 @@ public:
 		fs.close();
 	}
 
-};
+	void dipSwitchSave(int no, dipswitches_struct *dswitch)
+	{
+		int eeprompos = 4 + (no * sizeof(dipswitches_struct));
+		uint8_t *bytepointer;
+		bytepointer = (uint8_t *)dswitch;
 
+		File fs = SPIFFS.open("/EEPROM.TXT", "r+");
+		if (!fs)
+		{
+			Serial.println("SPIFFS unable to open storage");
+			return;
+		}
+
+		if (fs.seek(eeprompos, SeekSet) == false)
+		{
+			Serial.println("Positioning failed");
+			return;
+		}
+
+		for (uint cou = 0; cou < sizeof(dipswitches_struct); cou++)
+		{
+			fs.write(*bytepointer);
+			bytepointer++;
+		}
+
+		fs.close();
+	}
+
+	int dipSwitchFindFree(void)
+	{
+		int eeprompos = 4;
+		File fs = SPIFFS.open("/EEPROM.TXT", "r");
+		if (!fs)
+		{
+			Serial.println("SPIFFS unable to open storage");
+			return -1;
+		}
+
+		if (fs.seek(eeprompos, SeekSet) == false)
+		{
+			Serial.println("Positioning failed");
+			return -1;
+		}
+
+		for (int cou = 0; cou < N_DIPSWITCHES; cou++)
+		{
+			if (fs.read() == 0)
+			{
+				fs.close();
+				return cou;
+			}
+
+			eeprompos += sizeof(dipswitches_struct);
+			if (fs.seek(eeprompos, SeekSet) == false)
+			{
+				Serial.println("Positioning failed");
+				return -1;
+			}
+
+		}
+		fs.close();
+		return -1;
+	}
+
+	void dipSwitchLoad(int no, dipswitches_struct *dswitch)
+	{
+		uint8_t *bytepointer;
+		bytepointer = (uint8_t*)dswitch;
+		int eeprompos = 4 + (no * sizeof(dipswitches_struct));
+
+		File fs = SPIFFS.open("/EEPROM.TXT", "r");
+		if (!fs)
+		{
+			Serial.println("SPIFFS unable to open storage");
+			return;
+		}
+
+		if (fs.seek(eeprompos, SeekSet) == false)
+		{
+			Serial.println("Positioning failed");
+			return;
+		}
+
+		for (uint cou = 0; cou < sizeof(dipswitches_struct); cou++)
+		{
+			*bytepointer = fs.read();
+			bytepointer++;
+		}
+
+		fs.close();
+	}
+
+	void dipSwitchDelete(int no)
+	{
+		Serial.println("file open");
+		File fs = SPIFFS.open("/EEPROM.TXT", "r+");
+		if (!fs)
+		{
+			Serial.println("SPIFFS unable to open storage");
+			return;
+		}
+		Serial.println("seeking");
+		if (fs.seek(4 + (no * sizeof(dipswitches_struct)), SeekSet) == false)
+		{
+			Serial.println("Positioning failed");
+			return;
+		}
+
+		Serial.println("writing");
+		fs.write(0);
+		Serial.println("closing");
+		fs.close();
+	}
+};
+#endif
