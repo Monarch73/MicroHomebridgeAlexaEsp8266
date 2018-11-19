@@ -17,5 +17,9 @@
   <ItemGroup>
     <None Include="MicroHomebridgeAlexaEsp8266.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

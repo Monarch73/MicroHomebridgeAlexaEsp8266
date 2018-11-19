@@ -77,10 +77,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\MicroHomebridgeAlexaEsp8266;$(ProjectDir)..\..\..\..\program files (x86)\microsoft visual studio\2017\enterprise\common7\ide\extensions\ktpce3c3.a4z\Micro Platforms\visualmicro\ide\libraries;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\libraries;$(ProjectDir)..\..\..\git\github\libraries;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\cores\esp8266;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\cores\esp8266\avr;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\cores\esp8266\libb64;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\cores\esp8266\spiffs;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\cores\esp8266\umm_malloc;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\variants\nodemcu;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\tools\sdk\include;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\tools\sdk\lwip2\include;$(ProjectDir)..\..\..\git\github\hardware\esp8266\Arduino\tools\sdk\libc\xtensa-lx106-elf\include;$(ProjectDir)..\..\..\git\github\hardware\esp8266;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>__ARDUINO_ESp8266__;__ARDUINO_ESP8266__;__ets__;ICACHE_FLASH;F_CPU=80000000L;LWIP_OPEN_SRC;TCP_MSS=536;ARDUINO=10801;ARDUINO_ESP8266_NODEMCU;ARDUINO_ARCH_ARDUINO;ESP8266;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -110,6 +110,9 @@
     <None Include="MicroHomebridgeAlexaEsp8266.ino">
       <FileType>CppCode</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
