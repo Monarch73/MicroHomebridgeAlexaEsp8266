@@ -186,22 +186,34 @@ void connect() {
 void message(String& message)
 {
 	int pos;
-	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";//(char*)"\"messageId\":\"";
+	dipswitch dp;
+	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
 	Serial.println("Message arrived:");
 	Serial.println(message.c_str());
 	if ((pos = message.indexOf(discovery)) > 0)
 	{
-		ui->RefreshList();
+		estore->RefreshList();
 
 		Serial.println("discover response");
 		String msgId = message.substring(pos + strlen(discovery), pos + strlen(discovery) + 36);
 		Serial.println(msgId);
-		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), WebInterface::deviceList);
+		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), Estore::deviceList);
 	}
 	else if ((pos = message.indexOf(turn)) > 0)
 	{
 		Serial.println("turn xy response");
+		estore->RefreshList();
+
+		bool onoff = message.substring(pos + strlen(turn) + 1, pos + strlen(turn) + 3) == "On" ? true : false;
+		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
+		String endPointId = message.substring(endPointStart+15, message.indexOf("\",\"", endPointStart));
+		if (endPointId.length() == 10)
+		{
+			int number = endPointId.substring(8).toInt();
+			estore->dipSwitchLoad(number, &dp);
+			remote->Send(&dp, onoff);
+		}
 	}
 }
 

@@ -3,9 +3,6 @@
 #include "Progmem.h"
 #include "Estore.h"
 #include "WcFnRequestHandler.h"
-#include <map>
-#include <cstring>
-typedef struct dipswitches_struct dipswitch;
 using namespace std;
 class WebInterface
 {
@@ -48,7 +45,6 @@ private:
 	}
 
 public:
-	static std::map<char *,int> deviceList;
 	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch,bool)> callbackSwitch)
 	{
 		this->_estore = estore;
@@ -87,25 +83,6 @@ public:
 		else
 		{
 			_webserver->send_P(200, "text/html", ANGULAR_INDEX);
-		}
-	}
-
-	void RefreshList()
-	{
-		dipswitch dp;
-		for (auto p : deviceList)
-		{
-			free(p.first);
-		}
-
-		deviceList.clear();
-		for (int i = 0; i < N_DIPSWITCHES; i++)
-		{
-			this->_estore->dipSwitchLoad(i, &dp);
-			if (dp.name[0] != 0)
-			{
-				deviceList.insert(std::make_pair(strdup(dp.name), i));
-			}
 		}
 	}
 
@@ -303,4 +280,4 @@ public:
 	}
 };
 
-std::map<char *,int> WebInterface::deviceList;
+

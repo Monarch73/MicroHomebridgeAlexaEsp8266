@@ -8,6 +8,8 @@
 
 #include <EEPROM.h>
 #include <FS.h>
+#include <map>
+#include <cstring>
 
 struct dipswitches_struct
 {
@@ -23,6 +25,9 @@ struct dipswitches_struct
 	uint16_t irDataOff[100];
 };
 
+typedef struct dipswitches_struct dipswitch;
+
+
 class Estore
 {
 public:
@@ -30,6 +35,8 @@ public:
 	char password[N_CHAR_PASSWORD];
 	char homebridgeUsername[N_CHAR_HOMEBRIDGE];
 	char homebrdigePassword[N_CHAR_HOMEBRIDGE_PASSWORD];
+	static std::map<char *, int> deviceList;
+
 
 	Estore()
 	{
@@ -419,4 +426,25 @@ public:
 		Serial.println("closing");
 		fs.close();
 	}
+	
+	void RefreshList()
+	{
+		dipswitch dp;
+		for (auto p : deviceList)
+		{
+			free(p.first);
+		}
+
+		deviceList.clear();
+		for (int i = 0; i < N_DIPSWITCHES; i++)
+		{
+			this->dipSwitchLoad(i, &dp);
+			if (dp.name[0] != 0)
+			{
+				deviceList.insert(std::make_pair(strdup(dp.name), i));
+			}
+		}
+	}
 };
+std::map<char *, int> Estore::deviceList;
+

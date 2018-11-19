@@ -120,6 +120,9 @@
     <ClInclude Include="WebInterface.h" />
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="AlexaDump.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
