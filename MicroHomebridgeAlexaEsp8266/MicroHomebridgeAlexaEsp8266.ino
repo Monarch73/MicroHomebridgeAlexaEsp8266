@@ -200,6 +200,7 @@ void message(String& message)
 	dipswitch dp;
 	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
+	char *reportState = (char*)"\"namespace\":\"Alexa\",\"name\":\"ReportState\"";
 	Serial.println("Message arrived:");
 	Serial.println(message.c_str());
 	if ((pos = message.indexOf(discovery)) > 0)
@@ -219,12 +220,39 @@ void message(String& message)
 		bool onoff = message.substring(pos + strlen(turn) + 1, pos + strlen(turn) + 3) == "On" ? true : false;
 		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
 		String endPointId = message.substring(endPointStart+15, message.indexOf("\",\"", endPointStart));
+		int number = 0;
 		if (endPointId.length() == 10)
 		{
-			int number = endPointId.substring(8).toInt();
+			number = endPointId.substring(8).toInt();
 			estore->dipSwitchLoad(number, &dp);
 			remote->Send(&dp, onoff);
 		}
+
+		char *messageId = (char*)"\"messageId\":\"";
+		char *endCorrelationId = (char*)"Q==\"";
+		int startMessageId = message.indexOf(messageId);
+		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
+		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
+		mqtt->sendPowerStateResponse(messageStamp, onoff, number);
+
+	}
+	else if ((pos = message.indexOf(reportState)) > 0)
+	{
+		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
+		String endPointId = message.substring(endPointStart + 15, message.indexOf("\",\"", endPointStart));
+		int number = 0;
+		bool powerstate = false;
+		if (endPointId.length() == 10)
+		{
+			number = endPointId.substring(8).toInt();
+			powerstate = ui->getPowerState(number);
+		}
+		char *messageId = (char*)"\"messageId\":\"";
+		char *endCorrelationId = (char*)"Q==\"";
+		int startMessageId = message.indexOf(messageId);
+		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
+		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
+		mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
 	}
 }
 

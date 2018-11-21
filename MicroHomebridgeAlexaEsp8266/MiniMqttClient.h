@@ -136,10 +136,16 @@ private:
 		return sprintf(buf, "{\"endpointId\":\"Monarch-%02d\",\"friendlyName\":\"%s\",\"description\":\"Homebridge %s Light\",\"manufacturerName\":\"Default-Manufacturer\",\"displayCategories\":[\"LIGHT\"],\"cookie\":{\"TurnOn\":\"{1}\", \"TurnOff\":\"{0}\",\"ReportState\":\"{2}\"},\"capabilities\":[{\"type\":\"AlexaInterface\",\"interface\":\"Alexa\",\"version\":\"3\"},{\"type\":\"AlexaInterface\",\"interface\":\"Alexa.PowerController\",\"version\":\"3\",\"properties\":{\"supported\":[{\"name\":\"powerState\"}],\"proactivelyReported\":false,\"retrievable\":true}}]}", id, deviceName, deviceName);
 	}
 
+	int addPowerStateHeader(char *buf, bool onoff)
+	{
+		return sprintf(buf, "{\"context\":{\"properties\":[{\"namespace\":\"Alexa.PowerController\",\"name\":\"powerState\",\"value\":\"%s\", \"timeOfSample\":\"2018-11-17T21:43:51.289Z\", \"uncertaintyInMilliseconds\":500}]},\"event\":{\"header\":{\"namespace\":\"Alexa\",\"name\":\"Response\",\"payloadVersion\":\"3\",", onoff ? "ON":"OFF" );
+	}
+
 	int addDiscoveryFooter(char *buf)
 	{
 		return sprintf(buf, "]}}}");
 	}
+
 
 public:
 	MiniMqttClient(char *server, int port, char *clientId, char *username, char *password) :
@@ -178,6 +184,31 @@ public:
 		this->_client->write((uint8_t*)_sendbuffer, len);
 		this->_currentState = doingnil;
 		return true; 
+	}
+
+	int addPowerStateFooter(char *buf, int deviceId)
+	{
+		return sprintf(buf, ",\"endpoint\":{\"endpointId\":\"Monarch-%02d\"},\"payload\":{}}}", deviceId);
+	}
+
+	void sendPowerStateResponse(String& correlation, bool onoff, int deviceId)
+	{
+		memset(_sendbuffer, 0, sizeof(_sendbuffer));
+		int lenTopic = addResponseTopic(_sendbuffer);
+		int lenPayload = addPowerStateHeader(_sendbuffer, onoff);
+		lenPayload += correlation.length();
+		lenPayload += addPowerStateFooter(_sendbuffer, deviceId);
+		int len = 0;
+		_sendbuffer[len++] = 0x30;
+		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
+		len += addResponseTopic(_sendbuffer + len);
+		len += addPowerStateHeader(_sendbuffer + len, onoff);
+		memcpy(_sendbuffer + len, correlation.c_str(), correlation.length());
+		len += correlation.length();
+		len += addPowerStateFooter(_sendbuffer + len, deviceId);
+		this->_client->write((uint8_t*)_sendbuffer, len);
+		Serial.write(_sendbuffer + 5);
+
 	}
 
 	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
@@ -230,9 +261,6 @@ public:
 	{
 		if (this->_client != 0 && this->_client->connected())
 		{
-			
-			Serial.print("c");
-			delay(200);
 			if (millis() > this->pingmillis)
 			{
 				this->sendPing();

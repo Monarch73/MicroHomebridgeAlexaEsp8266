@@ -53,6 +53,11 @@ public:
 		this->_callBackSwitch = callbackSwitch;
 	}
 
+	bool getPowerState(int number)
+	{
+		return this->lightStates[number%N_DIPSWITCHES];
+	}
+
 	void HandleNotFound()
 	{
 		String uri = this->_webserver->uri();
