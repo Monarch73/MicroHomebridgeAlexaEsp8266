@@ -53,37 +53,92 @@ public:
 		this->_callBackSwitch = callbackSwitch;
 	}
 
-	void HandleAngular(WcFnRequestHandler *handler, String requestUri, HTTPMethod method) 
+	void HandleNotFound()
 	{
+		String uri = this->_webserver->uri();
+		String filename = "";
+		char *type = (char *)"text/javascript";
+		Serial.println("Handle not found");
+		Serial.println(uri);
 		_webserver->sendHeader("Cache-Control", " max-age=120");
 		_webserver->sendHeader("Last-Modified", "Wed, 21 Oct 2019 07:28:00 GMT");
-	
+
 		if (_webserver->hasHeader("If-Modified-Since"))
 		{
 			_webserver->send(304, "");
 			return;
 		}
 
-		if (requestUri.startsWith("/styles"))
+		if (uri.startsWith("/styles")) 
 		{
-			_webserver->send_P(200, "text/css",  ANGULAR_STYLES);
+			filename = "/styles.css";
+			type = (char *)"text/css";
 		}
-		else if (requestUri.startsWith("/polyfill"))
+		else if (uri.startsWith("/inline"))
 		{
-			_webserver->send_P(200, "text/javascript", ANGULAR_POLYFILLS);
+			filename = "/inline.js";
 		}
-		else if (requestUri.startsWith("/inline"))
+		else if (uri.startsWith("/poly"))
 		{
-			_webserver->send_P(200, "text/javascript", ANGULAR_INLINE);
+			filename = "/polyfills.js";
 		}
-		else if (requestUri.startsWith("/main"))
+		else if (uri.startsWith("/main"))
 		{
-			_webserver->send_P(200, "text/javascript", ANGULAR_MAIN);
+			filename = "/main.js";
 		}
 		else
 		{
-			_webserver->send_P(200, "text/html", ANGULAR_INDEX);
+			this->_webserver->send(404, "text/plain", "404: Not found");
+			return;
 		}
+
+		String pathWithGz = filename + ".gz";
+		if (SPIFFS.exists(pathWithGz)) filename = pathWithGz;
+		File fs = SPIFFS.open(filename, "r");
+		if (!fs)
+		{
+			this->_webserver->send(404, "text/plain", "404: Not found");
+
+		}
+		else
+		{
+			_webserver->streamFile(fs, type);
+		}
+
+		fs.close();
+	}
+
+	void HandleAngular(WcFnRequestHandler *handler, String requestUri, HTTPMethod method) 
+	{
+
+		Serial.println(requestUri);
+		_webserver->sendHeader("Cache-Control", " max-age=120");
+		_webserver->sendHeader("Last-Modified", "Wed, 21 Oct 2019 07:28:00 GMT");
+
+		if (_webserver->hasHeader("If-Modified-Since"))
+		{
+			_webserver->send(304, "");
+			return;
+		}
+
+		if (requestUri.endsWith("/")) requestUri += "index.html";
+		String pathWithGz = requestUri + ".gz";
+		if (SPIFFS.exists(pathWithGz)) requestUri = pathWithGz;
+		Serial.println(requestUri);
+		File fs = SPIFFS.open(requestUri.c_str(), "r");
+		if (!fs)
+		{
+			this->_webserver->send(404, "text/plain", "404: Not found");
+		}
+		else
+		{
+			Serial.println("serving spiffs");
+			//_webserver->sendHeader("Content-Encoding", "gzip");
+			_webserver->streamFile(fs, "text/html");
+			fs.close();
+		}
+
+		//_webserver->streamFile()
 	}
 
 	void HandleJsonList()

@@ -45,6 +45,7 @@
 #include "Estore.h"
 #include "WcFnRequestHandler.h"
 #include "RemoteControl.h"
+#include "FtpServ.h"
 
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
@@ -62,6 +63,7 @@ WebInterface* ui = 0;
 RemoteControl* remote = 0;
 RCSwitch mySwitch = RCSwitch();
 IRsend *myIr;
+FtpServ *ftp;
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
 
@@ -133,6 +135,14 @@ void WarpperHandleESocket()
 	}
 }
 
+void WrapperNotFound()
+{
+	if (ui != 0)
+	{
+		ui->HandleNotFound();
+	}
+}
+
 void EnterApMode()
 {
 	WiFi.mode(WIFI_AP);
@@ -140,10 +150,11 @@ void EnterApMode()
 	Serial.println("No ssid defined");
 	/* You can remove the password parameter if you want the AP to be open. */
 	WiFi.softAP("EasyAlexa");
-
 	IPAddress myIP = WiFi.softAPIP();
 	Serial.print("AP IP address: ");
 	Serial.println(myIP);
+	ftp = new FtpServ((char *)"",(char *)"");
+	ftp->begin();
 	web = new ESP8266WebServer(80);
 	ui = new WebInterface(estore, web, switchCallBack);
 	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
@@ -245,21 +256,19 @@ void setup() {
 	Serial.println(estore->homebridgeUsername);
 	Serial.println(estore->homebrdigePassword);
 	setup_wifi();
-	//mqtt = new MiniMqttClient((char *)mqtt_server, mqtt_port, (char *)mqtt_clientId, (char *)mqtt_username, (char *)mqtt_password);
 	mqtt = new MiniMqttClient((char *)mqtt_server, mqtt_port, (char *)estore->homebridgeUsername, (char *)estore->homebridgeUsername, estore->homebrdigePassword);
 	mqtt->setCallback(message);
+	ftp = new FtpServ((char *)"", (char *)"");
+	ftp->begin();
 	web = new ESP8266WebServer(80);
 	ui = new WebInterface(estore, web, switchCallBack);
 	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
 	on(WrapperHandleAngular,"/", HTTP_ANY);
-	on(WrapperHandleAngular, "styles.89c7d201f868ab33b8ed.bundle.css", HTTP_ANY);
-	on(WrapperHandleAngular, "inline.f41fde31ea1a5cf9edc6.bundle.js", HTTP_ANY);
-	on(WrapperHandleAngular, "polyfills.5b59249e2a37b3779465.bundle.js", HTTP_ANY);
-	on(WrapperHandleAngular, "main.703350806a72f38a4374.bundle.js", HTTP_ANY);
 	web->on("/jsonList", HTTP_GET, WrapperHandleJsonList);
 	web->on("/estore", HTTP_POST , WrapperHandleEStore);
 	web->on("/edelete", HTTP_GET, WrapperHandleEDelete);
 	web->on("/esocket", HTTP_GET, WarpperHandleESocket);
+	web->onNotFound(WrapperNotFound);
 	const char * headerkeys[] = { "User-Agent","Cookie", "If-Modified-Since" };
 	size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
 	//ask server to track these headers
