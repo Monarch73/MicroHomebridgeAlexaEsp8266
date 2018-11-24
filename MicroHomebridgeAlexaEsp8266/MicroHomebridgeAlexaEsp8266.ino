@@ -47,8 +47,8 @@
 #include "RemoteControl.h"
 #include "FtpServ.h"
 
-const char* mqtt_server = "homebridge.cloudwatch.net";
-//const char* mqtt_server = "192.168.1.193";
+//const char* mqtt_server = "homebridge.cloudwatch.net";
+const char* mqtt_server = "192.168.1.193";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "#";
 
@@ -71,11 +71,11 @@ void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcar
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
 }
 
-void switchCallBack(dipswitch dp, bool on)
+void switchCallBack(dipswitch dp, int number, bool on)
 {
 	if (remote !=0 )
 	{
-		remote->Send(&dp, on);
+		remote->Send(&dp,number, on);
 	}
 }
 
@@ -217,8 +217,7 @@ void message(String& message)
 	{
 		Serial.println("turn xy response");
 		estore->RefreshList();
-
-		bool onoff = message.substring(pos + strlen(turn) + 1, pos + strlen(turn) + 3) == "On" ? true : false;
+		bool onoff = message.substring(pos + strlen(turn) , pos + strlen(turn) + 2) == "On" ? true : false;
 		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
 		String endPointId = message.substring(endPointStart+15, message.indexOf("\",\"", endPointStart));
 		int number = 0;
@@ -226,7 +225,7 @@ void message(String& message)
 		{
 			number = endPointId.substring(8).toInt();
 			estore->dipSwitchLoad(number, &dp);
-			remote->Send(&dp, onoff);
+			remote->Send(&dp, number, onoff);
 		}
 
 		char *messageId = (char*)"\"messageId\":\"";
@@ -247,7 +246,7 @@ void message(String& message)
 		if (endPointId.length() == 10)
 		{
 			number = endPointId.substring(8).toInt();
-			powerstate = ui->getPowerState(number);
+			powerstate = remote->getPowerState(number);
 		}
 		char *messageId = (char*)"\"messageId\":\"";
 		char *endCorrelationId = (char*)"==\"";

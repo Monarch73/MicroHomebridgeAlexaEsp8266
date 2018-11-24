@@ -82,7 +82,7 @@ private:
 		_sendbuffer[len++] = 0;
 		hexdump(_sendbuffer, len);
 		this->_client->write((uint8_t*)_sendbuffer, len);
-		this->pingmillis = millis() + (1000 * 20);
+		this->pingmillis = millis() + (1000 * 30);
 	}
 
 	void sendConnect()
@@ -153,13 +153,15 @@ private:
 		if (!fs)
 		{
 			Serial.println("ERRROR: File not found!");
+			Serial.println(filename);
 			return 0;
 		}
 
-		char *result = (char *)malloc(fs.size());
-		fs.readBytes((char *)result, fs.size());
+		int size = fs.size();
+		char *result = (char *)malloc(size+1);
+		fs.readBytes(result, size);
 		fs.close();
-
+		result[size] = 0;
 		return result;
 	}
 
@@ -172,7 +174,8 @@ private:
 		int len = 0;
 		_sendbuffer[len++] = 0x30;
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
-		len += addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
+		len += addResponseTopic(_sendbuffer + len);
+		len += addSwitchResponse(_sendbuffer+len, formatSwitch, correlation, onoff, deviceId);
 		this->_client->write((uint8_t*)_sendbuffer, len);
 		free(formatSwitch);
 	}
@@ -207,11 +210,10 @@ public:
 		//_sendbuffer[len++] = 0x00;
 		// packet identifier
 		_sendbuffer[len++] = 0x00;
-		_sendbuffer[len++] = 0x01;
+		_sendbuffer[len++] = strlen(topic);
 		len = addToSendbuffer(topic, len);
 		// extra byte (Qos)
 		_sendbuffer[len++] = 0;
-		hexdump(_sendbuffer, len);
 		this->_client->write((uint8_t*)_sendbuffer, len);
 		this->_currentState = doingnil;
 		return true; 
@@ -219,20 +221,20 @@ public:
 
 	void sendSwitchResponse(String& correlation, bool onoff, int deviceId)
 	{
-		this->sendFileResponse((char *)"switch.json", (char *)correlation.c_str(), onoff, deviceId);
+		this->sendFileResponse((char *)"/switch.json", (char *)correlation.c_str(), onoff, deviceId);
 	}
 
 	void sendPowerStateResponse(String& correlation, bool onoff, int deviceId)
 	{
-		this->sendFileResponse((char *)"state.json", (char *)correlation.c_str(), onoff, deviceId);
+		this->sendFileResponse((char *)"/state.json", (char *)correlation.c_str(), onoff, deviceId);
 	}
 
 	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
 	{
 		Serial.printf("Sending response....");
-		char *formatheader = this->loadFile((char *)"discoveryheader.json");
-		char *formatdevice = this->loadFile((char *)"discoverydevice.json");
-		char *formatfooter = this->loadFile((char *)"discoveryfooter.json");
+		char *formatheader = this->loadFile((char *)"/discoveryheader.json");
+		char *formatdevice = this->loadFile((char *)"/discoverydevice.json");
+		char *formatfooter = this->loadFile((char *)"/discoveryfooter.json");
 		int lenTopic = addResponseTopic(_sendbuffer);
 		int lenPayload = addDiscoveryHeader(_sendbuffer,formatheader, msgId);
 		for (std::map<char *, int>::iterator it=deviceList.begin(); it != deviceList.end(); )
@@ -244,14 +246,15 @@ public:
 				lenPayload ++;
 			}
 		}
-
 		lenPayload += addDiscoveryFooter(_sendbuffer + lenTopic, formatfooter);
 
 		int len = 0;
 		_sendbuffer[len++] = 0x30;
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
+
 		len += addResponseTopic(_sendbuffer + len);
 		len += addDiscoveryHeader(_sendbuffer + len, formatheader,msgId); 
+
 		for (std::map<char *, int>::iterator it = deviceList.begin(); it != deviceList.end(); )
 		{
 			len += addDiscoveryDevice(_sendbuffer + len, formatdevice ,it->first, it->second);
@@ -266,7 +269,6 @@ public:
 		free(formatheader);
 		free(formatdevice);
 		free(formatfooter);
-		Serial.println(_sendbuffer + 5);
 	}
 
 	void connect()
@@ -303,17 +305,17 @@ public:
 				Serial.print("bytes read: ");
 				Serial.println(bytesRead);
 				//hexdump(_rcvbuffer, bytesRead);
-				this->pingmillis = millis() + (1000 * 20);
 
 				if (bytesRead > 3 &&_rcvbuffer[0] == MQTTSTATUS_CONNACK && _rcvbuffer[3]==0)
 				{
 					Serial.println("sending subscription request");
-					this->subscribe((char *)"#");
+					this->subscribe((char *)"command/#");
 				}
 
 				if (bytesRead > 4 && _rcvbuffer[0] == MQTTSTATUS_SUBSCRIBEACK && _rcvbuffer[4] != 0x80)
 				{
 					Serial.println("subscription ack");
+					this->pingmillis = millis() + (1000 * 30);
 				}
 
 				if (bytesRead > 1 && _rcvbuffer[0] == MQTTSTATUS_PINGACK)

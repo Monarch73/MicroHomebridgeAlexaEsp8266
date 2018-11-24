@@ -9,9 +9,8 @@ class WebInterface
 private:
 	Estore* _estore;
 	ESP8266WebServer* _webserver;
-	bool lightStates[N_DIPSWITCHES];
 	volatile char *_urlToCall = NULL;
-	std::function<void(dipswitch,bool)> _callBackSwitch;
+	std::function<void(dipswitch,int,bool)> _callBackSwitch;
 
 	int addStringToMemory(char *buf, char *txt)
 	{
@@ -45,17 +44,12 @@ private:
 	}
 
 public:
-	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch,bool)> callbackSwitch)
+	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch,int,bool)> callbackSwitch)
 	{
 		this->_estore = estore;
 		this->_webserver = web;
 		this->_urlToCall = 0;
 		this->_callBackSwitch = callbackSwitch;
-	}
-
-	bool getPowerState(int number)
-	{
-		return this->lightStates[number%N_DIPSWITCHES];
 	}
 
 	void HandleNotFound()
@@ -286,13 +280,11 @@ public:
 					{
 						if (onoff == 1)
 						{
-							this->_callBackSwitch(dp, true);
-							lightStates[i] = true;
+							this->_callBackSwitch(dp, nummer,true);
 						}
 						else
 						{
-							this->_callBackSwitch(dp, false);
-							lightStates[i] = false;
+							this->_callBackSwitch(dp, nummer, false);
 						}
 					}
 					currentLight++;

@@ -13,17 +13,26 @@ private:
 	RCSwitch *_switch;
 	IRsend* _myIr;
 	WebInterface* _webui;
+	bool lightStates[N_DIPSWITCHES];
+
 
 public:
 	RemoteControl(RCSwitch* rcswitch, IRsend* ir, WebInterface* webui) : _switch(rcswitch), _myIr(ir), _webui(webui)
 	{
 	}
 
-	void Send(dipswitch* dp, bool onoff)
+	bool getPowerState(int number)
+	{
+		return this->lightStates[number%N_DIPSWITCHES];
+	}
+
+
+	void Send(dipswitch* dp, int number, bool onoff)
 	{
 		dipswitch measure;
 		if (onoff == false)
 		{
+			lightStates[number%N_DIPSWITCHES] = true;
 			Serial.print("Turn Off via ");
 			if (strlen(dp->tri2) > 2)
 			{
@@ -58,6 +67,7 @@ public:
 		else
 		{
 			Serial.print("Turn On via ");
+			lightStates[number%N_DIPSWITCHES] = false;
 			if (strlen(dp->tri1) > 2)
 			{
 				Serial.println("tristate");
