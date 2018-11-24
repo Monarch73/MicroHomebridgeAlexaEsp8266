@@ -1,0 +1,1 @@
+{"context":{"properties":[{"namespace":"Alexa.PowerController","name":"powerState","value":"%s","timeOfSample":"2018-11-17T21:43:04.571Z","uncertaintyInMilliseconds":500}]},"event":{"header":{%s,"namespace":"Alexa","name":"StateReport","payloadVersion":"3"},"endpoint":{"endpointId":"Monarch-%02d","cookie":{}},"payload":{}}}

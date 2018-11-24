@@ -9,6 +9,7 @@
 #include <async_config.h>
 #include <AsyncPrinter.h>
 #include <map>
+#include <FS.h>
 
 #define MQTTSTATUS_CONNACK 0x20
 #define MQTTSTATUS_SUBSCRIBEACK 0x90
@@ -61,17 +62,12 @@ private:
 		}
 
 		buffer[pos++] = (len & 0x7fu);
-		Serial.print("setRemaininLeng");
-		Serial.println(pos);
 		return pos;
 	}
 
 	int addToSendbuffer(char *txt, int len)
 	{
 		int l = strlen(txt);
-		Serial.print(txt);
-		Serial.print(" adding:");
-		Serial.println(l);
 		_sendbuffer[len++] = 0;
 		_sendbuffer[len++] = l;
 		memcpy(_sendbuffer+len, txt, l);
@@ -126,24 +122,59 @@ private:
 		return lenTopic+2;
 	}
 
-	int addDiscoveryHeader(char *buf, char *msgId)
+	int addDiscoveryHeader(char *buf,char *format, char *msgId)
 	{
-		return sprintf(buf, "{\"event\":{\"header\":{\"namespace\":\"Alexa.Discovery\",\"name\":\"Discover.Response\",\"payloadVersion\":\"3\",\"messageId\":\"%s\"},\"payload\":{\"endpoints\":[", msgId);
+		return sprintf(buf, format, msgId);
 	}
 
-	int addDiscoveryDevice(char *buf, char *deviceName, int id)
+	int addDiscoveryDevice(char *buf, char *format, char *deviceName, int id)
 	{
-		return sprintf(buf, "{\"endpointId\":\"Monarch-%02d\",\"friendlyName\":\"%s\",\"description\":\"Homebridge %s Light\",\"manufacturerName\":\"Default-Manufacturer\",\"displayCategories\":[\"LIGHT\"],\"cookie\":{\"TurnOn\":\"{1}\", \"TurnOff\":\"{0}\",\"ReportState\":\"{2}\"},\"capabilities\":[{\"type\":\"AlexaInterface\",\"interface\":\"Alexa\",\"version\":\"3\"},{\"type\":\"AlexaInterface\",\"interface\":\"Alexa.PowerController\",\"version\":\"3\",\"properties\":{\"supported\":[{\"name\":\"powerState\"}],\"proactivelyReported\":false,\"retrievable\":true}}]}", id, deviceName, deviceName);
+		Serial.print("adding ");
+		Serial.println(id);
+		Serial.println(deviceName);
+		return sprintf(buf, format, id, deviceName, deviceName);
 	}
 
-	int addPowerStateHeader(char *buf, bool onoff)
+	int addDiscoveryFooter(char *buf,char *format)
 	{
-		return sprintf(buf, "{\"context\":{\"properties\":[{\"namespace\":\"Alexa.PowerController\",\"name\":\"powerState\",\"value\":\"%s\", \"timeOfSample\":\"2018-11-17T21:43:51.289Z\", \"uncertaintyInMilliseconds\":500}]},\"event\":{\"header\":{\"namespace\":\"Alexa\",\"name\":\"Response\",\"payloadVersion\":\"3\",", onoff ? "ON":"OFF" );
+		return sprintf(buf, format);
 	}
 
-	int addDiscoveryFooter(char *buf)
+
+	int addSwitchResponse(char* buf, char* format,char *correlation, bool onoff, int deviceId)
 	{
-		return sprintf(buf, "]}}}");
+		return sprintf(buf, format, onoff ? "ON" : "OFF", correlation, deviceId);
+
+	}
+
+	char* loadFile(char *filename)
+	{
+		File fs = SPIFFS.open(filename, "r");
+		if (!fs)
+		{
+			Serial.println("ERRROR: File not found!");
+			return 0;
+		}
+
+		char *result = (char *)malloc(fs.size());
+		fs.readBytes((char *)result, fs.size());
+		fs.close();
+
+		return result;
+	}
+
+	void sendFileResponse(char *filename, char* correlation, bool onoff, int deviceId)
+	{
+		char* formatSwitch = this->loadFile(filename);
+		int lenTopic = addResponseTopic(_sendbuffer);
+		int lenPayload = addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
+
+		int len = 0;
+		_sendbuffer[len++] = 0x30;
+		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
+		len += addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
+		this->_client->write((uint8_t*)_sendbuffer, len);
+		free(formatSwitch);
 	}
 
 
@@ -186,39 +217,27 @@ public:
 		return true; 
 	}
 
-	int addPowerStateFooter(char *buf, int deviceId)
+	void sendSwitchResponse(String& correlation, bool onoff, int deviceId)
 	{
-		return sprintf(buf, ",\"endpoint\":{\"endpointId\":\"Monarch-%02d\"},\"payload\":{}}}", deviceId);
+		this->sendFileResponse((char *)"switch.json", (char *)correlation.c_str(), onoff, deviceId);
 	}
 
 	void sendPowerStateResponse(String& correlation, bool onoff, int deviceId)
 	{
-		memset(_sendbuffer, 0, sizeof(_sendbuffer));
-		int lenTopic = addResponseTopic(_sendbuffer);
-		int lenPayload = addPowerStateHeader(_sendbuffer, onoff);
-		lenPayload += correlation.length();
-		lenPayload += addPowerStateFooter(_sendbuffer, deviceId);
-		int len = 0;
-		_sendbuffer[len++] = 0x30;
-		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
-		len += addResponseTopic(_sendbuffer + len);
-		len += addPowerStateHeader(_sendbuffer + len, onoff);
-		memcpy(_sendbuffer + len, correlation.c_str(), correlation.length());
-		len += correlation.length();
-		len += addPowerStateFooter(_sendbuffer + len, deviceId);
-		this->_client->write((uint8_t*)_sendbuffer, len);
-		Serial.write(_sendbuffer + 5);
-
+		this->sendFileResponse((char *)"state.json", (char *)correlation.c_str(), onoff, deviceId);
 	}
 
 	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
 	{
 		Serial.printf("Sending response....");
+		char *formatheader = this->loadFile((char *)"discoveryheader.json");
+		char *formatdevice = this->loadFile((char *)"discoverydevice.json");
+		char *formatfooter = this->loadFile((char *)"discoveryfooter.json");
 		int lenTopic = addResponseTopic(_sendbuffer);
-		int lenPayload = addDiscoveryHeader(_sendbuffer, msgId);
+		int lenPayload = addDiscoveryHeader(_sendbuffer,formatheader, msgId);
 		for (std::map<char *, int>::iterator it=deviceList.begin(); it != deviceList.end(); )
 		{
-			lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, it->first, it->second);
+			lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, formatdevice, it->first, it->second);
 			if (++it != deviceList.end())
 			{
 				_sendbuffer[lenTopic] = ',';
@@ -226,35 +245,40 @@ public:
 			}
 		}
 
-		lenPayload += addDiscoveryFooter(_sendbuffer + lenTopic);
+		lenPayload += addDiscoveryFooter(_sendbuffer + lenTopic, formatfooter);
 
 		int len = 0;
 		_sendbuffer[len++] = 0x30;
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
-		len += addDiscoveryHeader(_sendbuffer + len, msgId); 
+		len += addDiscoveryHeader(_sendbuffer + len, formatheader,msgId); 
 		for (std::map<char *, int>::iterator it = deviceList.begin(); it != deviceList.end(); )
 		{
-			len += addDiscoveryDevice(_sendbuffer + lenTopic, it->first, it->second);
+			len += addDiscoveryDevice(_sendbuffer + len, formatdevice ,it->first, it->second);
 			if (++it != deviceList.end())
 			{
 				_sendbuffer[len++] = ',';
 			}
 		}
 
-		len += addDiscoveryFooter(_sendbuffer + len);
+		len += addDiscoveryFooter(_sendbuffer + len, formatfooter);
 		this->_client->write((uint8_t*)_sendbuffer, len);
+		free(formatheader);
+		free(formatdevice);
+		free(formatfooter);
 		Serial.println(_sendbuffer + 5);
 	}
 
-	bool connect()
+	void connect()
 	{
-		_client = new SyncClient();
-		int result = _client->connect(this->_server, this->_port);
-		Serial.print("Connected to server:");
-		Serial.println(result);
-		this->_currentState = waitingForConnect;
-		return true;
+		if (this->_currentState != waitingForConnect)
+		{
+			this->_client = new SyncClient();
+			int result = _client->connect(this->_server, this->_port);
+			Serial.print("Connected to server:");
+			Serial.println(result);
+			this->_currentState = waitingForConnect;
+		}
 	}
 
 	void loop()
@@ -274,11 +298,13 @@ public:
 
 			if (this->_client->available())
 			{
-				this->pingmillis = millis() + (1000 * 20);
-				int bytesRead = this->_client->readBytes(_rcvbuffer, sizeof(_rcvbuffer));
+				memset(_rcvbuffer, 0, sizeof(_rcvbuffer));
+				int bytesRead = this->_client->readBytes(_rcvbuffer, sizeof(_rcvbuffer)-1);
 				Serial.print("bytes read: ");
 				Serial.println(bytesRead);
-				hexdump(_rcvbuffer, bytesRead);
+				//hexdump(_rcvbuffer, bytesRead);
+				this->pingmillis = millis() + (1000 * 20);
+
 				if (bytesRead > 3 &&_rcvbuffer[0] == MQTTSTATUS_CONNACK && _rcvbuffer[3]==0)
 				{
 					Serial.println("sending subscription request");
@@ -295,9 +321,8 @@ public:
 					Serial.println("PONG");
 				}
 
-				if (bytesRead > 4 && bytesRead < 250 && _rcvbuffer[0] == MQTTSTATUS_MESSAGE)
+				if (bytesRead > 4 && bytesRead < 1500 && _rcvbuffer[0] == MQTTSTATUS_MESSAGE)
 				{
-					_rcvbuffer[_rcvbuffer[1] + 3] = 0;
 					if (this->_onMessage != 0)
 					{
 						String mystring = _rcvbuffer+5;
@@ -309,7 +334,6 @@ public:
 		}
 		else
 		{
-			Serial.println("connecting");
 			this->connect();
 		}
 		return;

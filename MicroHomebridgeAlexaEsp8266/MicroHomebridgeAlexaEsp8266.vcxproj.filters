@@ -13,9 +13,42 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="data">
+      <UniqueIdentifier>{b1ad4f33-fbde-41cc-b49e-f21f913a80a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="MicroHomebridgeAlexaEsp8266.ino" />
+    <None Include="data\discoverydevice.json">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\discoveryfooter.json">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\discoveryheader.json">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\index.html.gz">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\inline.js.gz">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\main.js.gz">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\polyfills.js.gz">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\state.json">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\styles.css.gz">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\switch.json">
+      <Filter>data</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">
@@ -45,5 +78,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="AlexaDump.txt" />
+    <Text Include="daslog.txt" />
+    <Text Include="daslog2.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="data\favicon.ico">
+      <Filter>data</Filter>
+    </Image>
   </ItemGroup>
 </Project>

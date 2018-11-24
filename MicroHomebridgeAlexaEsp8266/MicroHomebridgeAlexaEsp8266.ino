@@ -207,7 +207,8 @@ void message(String& message)
 	{
 		estore->RefreshList();
 
-		Serial.println("discover response");
+		Serial.println("discover response. Number of switches:");
+		Serial.println(Estore::deviceList.size());
 		String msgId = message.substring(pos + strlen(discovery), pos + strlen(discovery) + 36);
 		Serial.println(msgId);
 		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), Estore::deviceList);
@@ -229,7 +230,7 @@ void message(String& message)
 		}
 
 		char *messageId = (char*)"\"messageId\":\"";
-		char *endCorrelationId = (char*)"Q==\"";
+		char *endCorrelationId = (char*)"==\"";
 		int startMessageId = message.indexOf(messageId);
 		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
 		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
@@ -238,6 +239,7 @@ void message(String& message)
 	}
 	else if ((pos = message.indexOf(reportState)) > 0)
 	{
+		Serial.println("Report state");
 		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
 		String endPointId = message.substring(endPointStart + 15, message.indexOf("\",\"", endPointStart));
 		int number = 0;
@@ -248,7 +250,7 @@ void message(String& message)
 			powerstate = ui->getPowerState(number);
 		}
 		char *messageId = (char*)"\"messageId\":\"";
-		char *endCorrelationId = (char*)"Q==\"";
+		char *endCorrelationId = (char*)"==\"";
 		int startMessageId = message.indexOf(messageId);
 		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
 		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
