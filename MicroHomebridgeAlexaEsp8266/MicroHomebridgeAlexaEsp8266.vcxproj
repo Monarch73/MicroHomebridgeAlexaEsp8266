@@ -131,6 +131,7 @@
     <ClInclude Include="MiniMqttClient.h" />
     <ClInclude Include="Progmem.h" />
     <ClInclude Include="RemoteControl.h" />
+    <ClInclude Include="StrFunc.h" />
     <ClInclude Include="WcFnRequestHandler.h" />
     <ClInclude Include="WebInterface.h" />
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h" />

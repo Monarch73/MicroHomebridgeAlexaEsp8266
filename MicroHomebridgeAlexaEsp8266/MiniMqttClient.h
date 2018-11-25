@@ -16,6 +16,16 @@
 #define MQTTSTATUS_PINGACK 0x0D0
 #define MQTTSTATUS_MESSAGE 0x30
 
+inline size_t get4kBlockSize(size_t size) { return ((size / 4096) + 1) * 4096; }
+
+struct structJsonFiles {
+	char *discoverydevice;
+	char *discoveryfooter;
+	char *discoveryheader;
+	char *state;
+	char *switchjson;
+};
+
 enum State { initialzed = 0 , waitingForConnect, waitingForConnectACK, doingnil, waitingformore, waitingforack};
 class MiniMqttClient
 {
@@ -35,6 +45,35 @@ private:
 	static char* _rcvbuffer;
 	static size_t _oldlen;
 	static size_t _remain;
+	static size_t _rcvbufferlen;
+	structJsonFiles* _allFiles;
+
+	void ensureAllocRcvBuffer(size_t remain)
+	{
+		
+		if (MiniMqttClient::_rcvbuffer != 0)
+		{
+			if (get4kBlockSize(remain) > MiniMqttClient::_rcvbufferlen)
+			{
+				Serial.println("Existing block too small. Need realloc");
+				free(MiniMqttClient::_rcvbuffer);
+				MiniMqttClient::_rcvbuffer = 0;
+			}
+		}
+
+		if (MiniMqttClient::_rcvbuffer == 0)
+		{
+			MiniMqttClient::_rcvbufferlen = get4kBlockSize(remain + 3);
+			Serial.print("Allocating receiverbuffer bytes: ");
+			Serial.println(MiniMqttClient::_rcvbufferlen);
+			MiniMqttClient::_rcvbuffer = (char *)malloc(MiniMqttClient::_rcvbufferlen);
+			if (!MiniMqttClient::_rcvbuffer)
+			{
+				Serial.println("FEHLER! Nicht genug speicher.");
+				while (true);
+			}
+		}
+	}
 
 	void hexdump(char *txt, int len)
 	{
@@ -149,9 +188,6 @@ private:
 
 	int addDiscoveryDevice(char *buf, char *format, char *deviceName, int id)
 	{
-		Serial.print("adding ");
-		Serial.println(id);
-		Serial.println(deviceName);
 		return sprintf(buf, format, id, deviceName, deviceName);
 	}
 
@@ -167,7 +203,7 @@ private:
 
 	}
 
-	char* loadFile(char *filename)
+	char* loadFileFromSpiffs(char *filename)
 	{
 		File fs = SPIFFS.open(filename, "r");
 		if (!fs)
@@ -185,12 +221,8 @@ private:
 		return result;
 	}
 
-	static void onAck(void *arg, AsyncClient* client, size_t len, uint32_t time)
+	static void handleAck(void *arg, AsyncClient* client, size_t len, uint32_t time)
 	{
-		Serial.print("ACK:");
-		Serial.println(len);
-		Serial.println(_myinstance->_currentState);
-
 		if (_myinstance->_currentState == waitingforack)
 		{
 			size_t sent = client->write(_myinstance->_sendbuffer + len, MiniMqttClient::_oldlen - len);
@@ -202,14 +234,14 @@ private:
 			else
 			{
 				Serial.println("Error in sent");
+				while (true);
 			}
 		}
 
 	}
 
-	void sendFileResponse(char *filename, char* correlation, bool onoff, int deviceId)
+	void sendFileResponse(char *formatSwitch, char* correlation, bool onoff, int deviceId)
 	{
-		char* formatSwitch = this->loadFile(filename);
 		int lenTopic = addResponseTopic(_sendbuffer);
 		int lenPayload = addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
 
@@ -226,7 +258,6 @@ private:
 			MiniMqttClient::_oldlen = len;
 			MiniMqttClient::_remain = sent;
 		}
-		free(formatSwitch);
 	}
 
 	static void handleOnConnect(void *arg, AsyncClient* client)
@@ -289,16 +320,11 @@ private:
 
 		if (len > 4  && rcvbuffer[0] == MQTTSTATUS_MESSAGE)
 		{
-			Serial.print("remaining len read: ");
 			size_t remain = _myinstance->getRemainLength(rcvbuffer + 1);
 			if (len - 3 < remain)
 			{
-				if (MiniMqttClient::_rcvbuffer != 0)
-				{
-					free(MiniMqttClient::_rcvbuffer);
-				}
+				_myinstance->ensureAllocRcvBuffer(remain);
 
-				MiniMqttClient::_rcvbuffer =(char *)malloc(remain + 3);
 				memcpy(MiniMqttClient::_rcvbuffer, rcvbuffer, len);
 				MiniMqttClient::_oldlen = len;
 				MiniMqttClient::_remain = remain;
@@ -336,6 +362,13 @@ public:
 		Serial.println(this->_clientId);
 		MiniMqttClient::_myinstance = this;
 		MiniMqttClient::_rcvbuffer = 0;
+
+		this->_allFiles =(structJsonFiles*)malloc(sizeof(structJsonFiles));
+		this->_allFiles->discoverydevice = this->loadFileFromSpiffs((char*)"/discoverydevice.json");
+		this->_allFiles->discoveryfooter = this->loadFileFromSpiffs((char*)"/discoveryfooter.json");
+		this->_allFiles->discoveryheader = this->loadFileFromSpiffs((char*)"/discoveryheader.json");
+		this->_allFiles->switchjson = this->loadFileFromSpiffs((char*)"/switch.json");
+		this->_allFiles->state = this->loadFileFromSpiffs((char*)"/state.json");
 	}
 
 	void setCallback(std::function<void(char*,int)> callback)
@@ -361,22 +394,22 @@ public:
 		return true; 
 	}
 
-	void sendSwitchResponse(String& correlation, bool onoff, int deviceId)
+	void sendSwitchResponse(char *correlation, bool onoff, int deviceId)
 	{
-		this->sendFileResponse((char *)"/switch.json", (char *)correlation.c_str(), onoff, deviceId);
+		this->sendFileResponse(this->_allFiles->switchjson, (char *)correlation, onoff, deviceId);
 	}
 
-	void sendPowerStateResponse(String& correlation, bool onoff, int deviceId)
+	void sendPowerStateResponse(char *correlation, bool onoff, int deviceId)
 	{
-		this->sendFileResponse((char *)"/state.json", (char *)correlation.c_str(), onoff, deviceId);
+		this->sendFileResponse(this->_allFiles->state, (char *)correlation, onoff, deviceId);
 	}
 
 	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
 	{
 		Serial.printf("Sending response....");
-		char *formatheader = this->loadFile((char *)"/discoveryheader.json");
-		char *formatdevice = this->loadFile((char *)"/discoverydevice.json");
-		char *formatfooter = this->loadFile((char *)"/discoveryfooter.json");
+		char *formatheader = this->_allFiles->discoveryheader; // this->loadFile((char *)"/discoveryheader.json");
+		char *formatdevice = this->_allFiles->discoverydevice; //this->loadFile((char *)"/discoverydevice.json");
+		char *formatfooter = this->_allFiles->discoveryfooter; // this->loadFile((char *)"/discoveryfooter.json");
 		int lenTopic = addResponseTopic(_sendbuffer);
 		int lenPayload = addDiscoveryHeader(_sendbuffer,formatheader, msgId);
 		for (std::map<char *, int>::iterator it=deviceList.begin(); it != deviceList.end(); )
@@ -408,9 +441,6 @@ public:
 
 		len += addDiscoveryFooter(_sendbuffer + len, formatfooter);
 		this->_client->write((char*)_sendbuffer, len);
-		free(formatheader);
-		free(formatdevice);
-		free(formatfooter);
 	}
 
 	void connect()
@@ -421,7 +451,7 @@ public:
 			_client->onConnect(&handleOnConnect, this->_client);
 			_client->onData(&handleData);
 			_client->onDisconnect(&handleDisconnect);
-			_client->onAck(&onAck);
+			_client->onAck(&handleAck);
 			_client->connect(this->_server, this->_port);
 			this->_currentState = waitingForConnect;
 		}
@@ -449,3 +479,4 @@ MiniMqttClient* MiniMqttClient::_myinstance;
 char* MiniMqttClient::_rcvbuffer;
 size_t MiniMqttClient::_oldlen;
 size_t MiniMqttClient::_remain;
+size_t MiniMqttClient::_rcvbufferlen;

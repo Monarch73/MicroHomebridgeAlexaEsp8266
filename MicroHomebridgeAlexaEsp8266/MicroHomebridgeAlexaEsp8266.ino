@@ -46,9 +46,10 @@
 #include "WcFnRequestHandler.h"
 #include "RemoteControl.h"
 #include "FtpServ.h"
+#include "StrFunc.h"
 
 //const char* mqtt_server = "homebridge.cloudwatch.net";
-const char* mqtt_server = "192.168.1.193";
+const char* mqtt_server = "192.168.1.136";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "#";
 
@@ -64,6 +65,7 @@ RemoteControl* remote = 0;
 RCSwitch mySwitch = RCSwitch();
 IRsend *myIr;
 FtpServ *ftp;
+
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
 
@@ -194,93 +196,104 @@ void connect() {
 	}
 }
 
+char *getMessageStampDup(char *buffer, int len)
+{
+	char *messageId = (char*)"\"messageId\":\"";
+	char *endCorrelationId = (char*)"==\"";
+	char *startMessageId = StrFunc::indexOf(buffer, messageId, len);
+	if (!startMessageId)
+	{
+		Serial.println("FEHLER: Messageid not found");
+		return 0;
+	}
+
+	char *endCorrelationIdPos = StrFunc::indexOf(startMessageId, endCorrelationId, (buffer + len) - startMessageId);
+	if (!endCorrelationIdPos)
+	{
+		Serial.printf("FEHLER: ende nicht gefunden");
+		return 0;
+	}
+	char *messageStamp = StrFunc::substrdup(startMessageId, (endCorrelationIdPos - startMessageId) + 3);
+	return messageStamp;
+}
+
+int getNumber(char *buffer, int len)
+{
+	char *endPointNeedle = (char*)"{\"endpointId\":\"";
+	char *endPointStart = StrFunc::indexOf(buffer, endPointNeedle, len);
+	if (!endPointStart)
+	{
+		Serial.println("Fehler: endpointId nicht gefunden");
+		return 0;
+	}
+	char *endPointIdEnd = StrFunc::indexOf(endPointStart, (char*)"\",\"", (buffer + len) - endPointStart);
+	if (!endPointIdEnd)
+	{
+		Serial.println("Fehler: ende von endpointId nicht gefunden");
+		return 0;
+	}
+	int number = 0;
+	endPointIdEnd -= 2;
+	number = (endPointIdEnd[0] - 48) * 10;
+	number += endPointIdEnd[1] - 48;
+	return number;
+}
+
 void message(char *buffer, int len)
 {
-	
-	int pos;
+
+	char *posbuf;
+//	int pos;
 	dipswitch dp;
 	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
 	char *reportState = (char*)"\"namespace\":\"Alexa\",\"name\":\"ReportState\"";
 
-	char *buf2 = (char*)malloc(len + 1);
-	memcpy(buf2, buffer+5,len-5);
-	buf2[len-5] = 0;
-	String message = buf2;
-	if ((pos = message.indexOf(discovery)) > 0)
+//	char *buf2 = (char*)malloc(len + 1);
+//	memcpy(buf2, buffer+5,len-5);
+//	buf2[len-5] = 0;
+//	String message = buf2;
+	if ((posbuf = StrFunc::indexOf(buffer, discovery, len)) > 0)
 	{
 		estore->RefreshList();
 
 		Serial.println("discover response. Number of switches:");
 		Serial.println(Estore::deviceList.size());
-		String msgId = message.substring(pos + strlen(discovery), pos + strlen(discovery) + 36);
+		char *msgId = StrFunc::substrdup(posbuf + strlen(discovery), 36);
 		Serial.println(msgId);
-		//mqtt->sendDiscoveryResponse((char*)msgId.c_str(), Estore::deviceList);
+		mqtt->sendDiscoveryResponse(msgId, Estore::deviceList);
+		free(msgId);
 	}
-	else if ((pos = message.indexOf(turn)) > 0)
+	else if ((posbuf = StrFunc::indexOf(buffer, turn, len)) > 0)
 	{
 		Serial.println("turn xy response");
 		estore->RefreshList();
-		bool onoff = message.substring(pos + strlen(turn) , pos + strlen(turn) + 2) == "On" ? true : false;
-		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
-		String endPointId = message.substring(endPointStart+15, message.indexOf("\",\"", endPointStart));
-		int number = 0;
-		if (endPointId.length() == 10)
-		{
-			number = endPointId.substring(8).toInt();
-			estore->dipSwitchLoad(number, &dp);
-			remote->Send(&dp, number, onoff);
+		char *onoffpos = posbuf + strlen(turn);
+		bool onoff = (onoffpos[0] == 'O' && onoffpos[1] == 'n');
 
-			Serial.print("Number ");
-			Serial.print(number);
-			Serial.print("is turned ");
-			Serial.println(onoff ? "on" : "off");
+		int number = getNumber(buffer,len);
+		Serial.print("Number ");
+		Serial.print(number);
+		Serial.print(" is turned ");
+		Serial.println(onoff ? "on" : "off");
 
-		}
-		else
-		{
-			Serial.println("FEHLER im switch state respone");
-			Serial.println(endPointId);
-		}
-
-		char *messageId = (char*)"\"messageId\":\"";
-		char *endCorrelationId = (char*)"==\"";
-		int startMessageId = message.indexOf(messageId);
-		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
-		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
-		mqtt->sendSwitchResponse(messageStamp, onoff, number);
+		char *messageStamp = getMessageStampDup(buffer, len);
+		Serial.print("Message Stamp: ");
+		Serial.println(messageStamp);
+////	mqtt->sendSwitchResponse(messageStamp, onoff, number);
+		free(messageStamp);
 	}
-	else if ((pos = message.indexOf(reportState)) > 0)
+	else if ((posbuf = StrFunc::indexOf(buffer, reportState, len)) > 0)
 	{
-		Serial.println("Report state");
-		int endPointStart = message.lastIndexOf("{\"endpointId\":\"");
-		String endPointId = message.substring(endPointStart + 15, message.indexOf("\",\"", endPointStart));
-		int number = 0;
-		bool powerstate = false;
-		if (endPointId.length() == 10)
-		{
-			number = endPointId.substring(8).toInt();
-			powerstate = remote->getPowerState(number);
-			Serial.print(number);
-			Serial.print(" is ");
-			Serial.println(powerstate ? "On" : "Off");
-		}
-		else
-		{
-			Serial.println("FEHLER im ReportState");
-			Serial.println(endPointId);
-			Serial.println(endPointStart);
-			Serial.println(message);
-		}
-		char *messageId = (char*)"\"messageId\":\"";
-		char *endCorrelationId = (char*)"==\"";
-		int startMessageId = message.indexOf(messageId);
-		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
-		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
-		mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
+		int	number = getNumber(buffer, len);
+		bool powerstate = remote->getPowerState(number);
+		Serial.print(number);
+		Serial.print(" is ");
+		Serial.println(powerstate ? "On" : "Off");
+		char *messageStamp = getMessageStampDup(buffer, len);
+//		mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
+		free(messageStamp);
 	}
-
-	free(buf2);
 }
 
 void setup() {
