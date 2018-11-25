@@ -26,7 +26,7 @@ struct structJsonFiles {
 	char *switchjson;
 };
 
-enum State { initialzed = 0 , waitingForConnect, waitingForConnectACK, doingnil, waitingformore, waitingforack};
+enum State { initialzed = 0 , waitingForConnect, waitingForConnectACK, doingnil, waitingformore, waitingforack, readytosend};
 class MiniMqttClient
 {
 private:
@@ -37,7 +37,7 @@ private:
 	char *_password;
 	char *_topic;
 	AsyncClient* _client;
-	char _sendbuffer[2048];
+	char _sendbuffer[8192];
 	int _currentState;
 	unsigned long pingmillis=0x0fffffff;
 	std::function<void(char*,int)> _onMessage;
@@ -73,25 +73,6 @@ private:
 				while (true);
 			}
 		}
-	}
-
-	void hexdump(char *txt, int len)
-	{
-		char buf[10];
-		for (int i = 0; i < len; i++)
-		{
-			sprintf(buf, "%2x ", txt[i]);
-			Serial.print(buf);
-		}
-		
-		Serial.println("");
-		for (int i = 0; i < len; i++)
-		{
-			sprintf(buf, "%2c ", txt[i]);
-			Serial.print(buf);
-		}
-
-		Serial.println("");
 	}
 
 	int setRemainLenth(char *buffer, uint32_t len)
@@ -250,6 +231,13 @@ private:
 
 	void sendFileResponse(char *formatSwitch, char* correlation, bool onoff, int deviceId)
 	{
+		Serial.println("prepaing sending");
+		if (!this->_client->canSend() || _myinstance->_currentState == waitingforack || _myinstance->_currentState== readytosend)
+		{
+			Serial.println("Cannot send");
+			return;
+		}
+
 		int lenTopic = addResponseTopic(_sendbuffer);
 		int lenPayload = addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
 
@@ -258,14 +246,8 @@ private:
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
 		len += addSwitchResponse(_sendbuffer+len, formatSwitch, correlation, onoff, deviceId);
-		int sent=this->_client->write((char *)_sendbuffer, len);
-		if (sent < len)
-		{
-			_myinstance->_currentState = waitingforack;
-			Serial.println("waiting for ack");
-			MiniMqttClient::_oldlen = len;
-			MiniMqttClient::_remain = sent;
-		}
+		_myinstance->_currentState = readytosend;
+		MiniMqttClient::_oldlen = len;
 	}
 
 	static void handleOnConnect(void *arg, AsyncClient* client)
@@ -469,6 +451,21 @@ public:
 	{
 		if (this->_client != 0 && this->_client->connected())
 		{
+			if (this->_client->canSend() && this->_currentState == readytosend)
+			{
+				Serial.println("sending");
+				int len = MiniMqttClient::_oldlen;
+				int sent = this->_client->write((char *)_sendbuffer, len);
+				if (sent < len)
+				{
+					this->_currentState = waitingforack;
+					Serial.println("waiting for ack");
+					MiniMqttClient::_remain = sent;
+					return;
+				}
+
+				this->_currentState = doingnil;
+			}
 			if (millis() > this->pingmillis)
 			{
 				if (this->_client->canSend())
@@ -488,6 +485,26 @@ public:
 		}
 		return;
 	}
+
+	static void hexdump(char *txt, int len)
+	{
+		char buf[10];
+		for (int i = 0; i < len; i++)
+		{
+			sprintf(buf, "%2x ", txt[i]);
+			Serial.print(buf);
+		}
+
+		Serial.println("");
+		for (int i = 0; i < len; i++)
+		{
+			sprintf(buf, "%2c ", txt[i]);
+			Serial.print(buf);
+		}
+
+		Serial.println("");
+	}
+
 };
 
 MiniMqttClient* MiniMqttClient::_myinstance;

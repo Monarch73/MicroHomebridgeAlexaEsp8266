@@ -200,22 +200,24 @@ void connect() {
 char *getMessageStampDup(char *buffer, int len)
 {
 	char *messageId = (char*)"\"messageId\":\"";
-	char *endCorrelationId = (char*)"==\"";
+	char *endCorrelationId = (char*)"=\"}";
 	char *startMessageId = StrFunc::indexOf(buffer, messageId, len);
 	if (!startMessageId)
 	{
 		Serial.println("FEHLER: Messageid not found");
 		return 0;
 	}
-
+	Serial.println((int)(startMessageId-buffer));
+	Serial.println((buffer + len) - startMessageId);
 	char *endCorrelationIdPos = StrFunc::indexOf(startMessageId, endCorrelationId, (buffer + len) - startMessageId);
 	if (!endCorrelationIdPos)
 	{
-		hexdump(buffer, len);
+		MiniMqttClient::hexdump(buffer, len);
 		Serial.printf("FEHLER: ende nicht gefunden");
-		return 0;
+		while (true);
 	}
-	char *messageStamp = StrFunc::substrdup(startMessageId, (endCorrelationIdPos - startMessageId) + 3);
+	Serial.println(system_get_free_heap_size());
+	char *messageStamp = StrFunc::substrdup(startMessageId, (endCorrelationIdPos - startMessageId) + 2);
 	return messageStamp;
 }
 
