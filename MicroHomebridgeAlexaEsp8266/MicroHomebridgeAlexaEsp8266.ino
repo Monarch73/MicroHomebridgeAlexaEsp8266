@@ -68,6 +68,7 @@ FtpServ *ftp;
 
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
+unsigned int lastDiscoveryResponse =0;
 
 void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcard = '*') {
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
@@ -210,6 +211,7 @@ char *getMessageStampDup(char *buffer, int len)
 	char *endCorrelationIdPos = StrFunc::indexOf(startMessageId, endCorrelationId, (buffer + len) - startMessageId);
 	if (!endCorrelationIdPos)
 	{
+		hexdump(buffer, len);
 		Serial.printf("FEHLER: ende nicht gefunden");
 		return 0;
 	}
@@ -243,26 +245,30 @@ void message(char *buffer, int len)
 {
 
 	char *posbuf;
-//	int pos;
 	dipswitch dp;
 	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
 	char *reportState = (char*)"\"namespace\":\"Alexa\",\"name\":\"ReportState\"";
 
-//	char *buf2 = (char*)malloc(len + 1);
-//	memcpy(buf2, buffer+5,len-5);
-//	buf2[len-5] = 0;
-//	String message = buf2;
 	if ((posbuf = StrFunc::indexOf(buffer, discovery, len)) > 0)
 	{
-		estore->RefreshList();
+		if (millis() - lastDiscoveryResponse > 10000)
+		{
+			estore->RefreshList();
 
-		Serial.println("discover response. Number of switches:");
-		Serial.println(Estore::deviceList.size());
-		char *msgId = StrFunc::substrdup(posbuf + strlen(discovery), 36);
-		Serial.println(msgId);
-		mqtt->sendDiscoveryResponse(msgId, Estore::deviceList);
-		free(msgId);
+			Serial.println("discover response. Number of switches:");
+			Serial.println(Estore::deviceList.size());
+			char *msgId = StrFunc::substrdup(posbuf + strlen(discovery), 36);
+			Serial.println(msgId);
+			mqtt->sendDiscoveryResponse(msgId, Estore::deviceList);
+			free(msgId);
+			lastDiscoveryResponse = millis();
+		}
+		else
+		{
+			Serial.println("Ignoring discovery...");
+		}
+
 	}
 	else if ((posbuf = StrFunc::indexOf(buffer, turn, len)) > 0)
 	{
@@ -272,16 +278,19 @@ void message(char *buffer, int len)
 		bool onoff = (onoffpos[0] == 'O' && onoffpos[1] == 'n');
 
 		int number = getNumber(buffer,len);
+		estore->dipSwitchLoad(number, &dp);
+		remote->Send(&dp, number, onoff);
 		Serial.print("Number ");
 		Serial.print(number);
 		Serial.print(" is turned ");
 		Serial.println(onoff ? "on" : "off");
 
 		char *messageStamp = getMessageStampDup(buffer, len);
-		Serial.print("Message Stamp: ");
-		Serial.println(messageStamp);
-////	mqtt->sendSwitchResponse(messageStamp, onoff, number);
-		free(messageStamp);
+		if (messageStamp)
+		{
+			mqtt->sendSwitchResponse(messageStamp, onoff, number);
+			free(messageStamp);
+		}
 	}
 	else if ((posbuf = StrFunc::indexOf(buffer, reportState, len)) > 0)
 	{
@@ -291,8 +300,11 @@ void message(char *buffer, int len)
 		Serial.print(" is ");
 		Serial.println(powerstate ? "On" : "Off");
 		char *messageStamp = getMessageStampDup(buffer, len);
-//		mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
-		free(messageStamp);
+		if (messageStamp)
+		{
+			mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
+			free(messageStamp);
+		}
 	}
 }
 

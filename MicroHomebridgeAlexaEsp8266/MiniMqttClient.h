@@ -141,7 +141,7 @@ private:
 		_sendbuffer[len++] = 0;
 		hexdump(_sendbuffer, len);
 		this->_client->write((char *)_sendbuffer, len);
-		this->pingmillis = millis() + (1000 * 30);
+		this->pingmillis = millis() + (1000*30);
 	}
 
 	void sendConnect()
@@ -225,14 +225,22 @@ private:
 	{
 		if (_myinstance->_currentState == waitingforack)
 		{
+			Serial.print("Sending more bytes: ");
+			Serial.println(MiniMqttClient::_oldlen - len);
 			size_t sent = client->write(_myinstance->_sendbuffer + len, MiniMqttClient::_oldlen - len);
-			if (sent == MiniMqttClient::_oldlen - len)
+			if (sent + MiniMqttClient::_remain == MiniMqttClient::_oldlen)
 			{
 				Serial.println("SENT!");
 				_myinstance->_currentState = doingnil;
 			}
 			else
 			{
+				Serial.print("insgesamt: ");
+				Serial.println(MiniMqttClient::_oldlen);
+				Serial.print("schritt 1:");
+				Serial.println(len);
+				Serial.print("schritt 2:");
+				Serial.println(sent);
 				Serial.println("Error in sent");
 				while (true);
 			}
@@ -463,7 +471,14 @@ public:
 		{
 			if (millis() > this->pingmillis)
 			{
-				this->sendPing();
+				if (this->_client->canSend())
+				{
+					this->sendPing();
+				}
+				else
+				{
+					this->pingmillis = millis() + 1000;
+				}
 			}
 
 		}
