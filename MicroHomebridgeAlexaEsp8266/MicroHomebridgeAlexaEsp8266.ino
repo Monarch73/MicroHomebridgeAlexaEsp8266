@@ -194,15 +194,19 @@ void connect() {
 	}
 }
 
-void message(String& message)
+void message(char *buffer, int len)
 {
+	
 	int pos;
 	dipswitch dp;
 	char *discovery = (char*)"\"name\":\"Discover\",\"payloadVersion\":\"3\",\"messageId\":\"";
 	char *turn = (char*)":\"Alexa.PowerController\",\"name\":\"Turn";
 	char *reportState = (char*)"\"namespace\":\"Alexa\",\"name\":\"ReportState\"";
-	Serial.println("Message arrived:");
-	Serial.println(message.c_str());
+
+	char *buf2 = (char*)malloc(len + 1);
+	memcpy(buf2, buffer+5,len-5);
+	buf2[len-5] = 0;
+	String message = buf2;
 	if ((pos = message.indexOf(discovery)) > 0)
 	{
 		estore->RefreshList();
@@ -211,7 +215,7 @@ void message(String& message)
 		Serial.println(Estore::deviceList.size());
 		String msgId = message.substring(pos + strlen(discovery), pos + strlen(discovery) + 36);
 		Serial.println(msgId);
-		mqtt->sendDiscoveryResponse((char*)msgId.c_str(), Estore::deviceList);
+		//mqtt->sendDiscoveryResponse((char*)msgId.c_str(), Estore::deviceList);
 	}
 	else if ((pos = message.indexOf(turn)) > 0)
 	{
@@ -226,6 +230,17 @@ void message(String& message)
 			number = endPointId.substring(8).toInt();
 			estore->dipSwitchLoad(number, &dp);
 			remote->Send(&dp, number, onoff);
+
+			Serial.print("Number ");
+			Serial.print(number);
+			Serial.print("is turned ");
+			Serial.println(onoff ? "on" : "off");
+
+		}
+		else
+		{
+			Serial.println("FEHLER im switch state respone");
+			Serial.println(endPointId);
 		}
 
 		char *messageId = (char*)"\"messageId\":\"";
@@ -233,8 +248,7 @@ void message(String& message)
 		int startMessageId = message.indexOf(messageId);
 		int endCorrelationIdPos = message.indexOf(endCorrelationId, startMessageId);
 		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
-		mqtt->sendPowerStateResponse(messageStamp, onoff, number);
-
+		mqtt->sendSwitchResponse(messageStamp, onoff, number);
 	}
 	else if ((pos = message.indexOf(reportState)) > 0)
 	{
@@ -247,6 +261,16 @@ void message(String& message)
 		{
 			number = endPointId.substring(8).toInt();
 			powerstate = remote->getPowerState(number);
+			Serial.print(number);
+			Serial.print(" is ");
+			Serial.println(powerstate ? "On" : "Off");
+		}
+		else
+		{
+			Serial.println("FEHLER im ReportState");
+			Serial.println(endPointId);
+			Serial.println(endPointStart);
+			Serial.println(message);
 		}
 		char *messageId = (char*)"\"messageId\":\"";
 		char *endCorrelationId = (char*)"==\"";
@@ -255,6 +279,8 @@ void message(String& message)
 		String messageStamp = message.substring(startMessageId, endCorrelationIdPos + strlen(endCorrelationId));
 		mqtt->sendPowerStateResponse(messageStamp, powerstate, number);
 	}
+
+	free(buf2);
 }
 
 void setup() {

@@ -16,7 +16,7 @@
 #define MQTTSTATUS_PINGACK 0x0D0
 #define MQTTSTATUS_MESSAGE 0x30
 
-enum State { initialzed = 0 , waitingForConnect, waitingForConnectACK, doingnil };
+enum State { initialzed = 0 , waitingForConnect, waitingForConnectACK, doingnil, waitingformore, waitingforack};
 class MiniMqttClient
 {
 private:
@@ -26,12 +26,15 @@ private:
 	char *_username;
 	char *_password;
 	char *_topic;
-	SyncClient* _client;
+	AsyncClient* _client;
 	char _sendbuffer[2048];
-	char _rcvbuffer[2048];
 	int _currentState;
 	unsigned long pingmillis=0x0fffffff;
-	std::function<void(String&)> _onMessage;
+	std::function<void(char*,int)> _onMessage;
+	static MiniMqttClient* _myinstance;
+	static char* _rcvbuffer;
+	static size_t _oldlen;
+	static size_t _remain;
 
 	void hexdump(char *txt, int len)
 	{
@@ -65,6 +68,23 @@ private:
 		return pos;
 	}
 
+	int getRemainLength(char *buffer)
+	{
+		int result = 0;
+		int shift = 0;
+		int cou = 0;
+		int x;
+		while ((x=buffer[cou]) >128)
+		{
+			result += ((x & 0x7fu) << shift);
+			shift += 7;
+			cou++;
+		}
+	
+		result += ((x & 0x7fu) << shift);
+		return result;
+	}
+
 	int addToSendbuffer(char *txt, int len)
 	{
 		int l = strlen(txt);
@@ -81,7 +101,7 @@ private:
 		_sendbuffer[len++] = 0x0c0;
 		_sendbuffer[len++] = 0;
 		hexdump(_sendbuffer, len);
-		this->_client->write((uint8_t*)_sendbuffer, len);
+		this->_client->write((char *)_sendbuffer, len);
 		this->pingmillis = millis() + (1000 * 30);
 	}
 
@@ -110,7 +130,7 @@ private:
 		len = this->addToSendbuffer(this->_password, len);
 		_sendbuffer[1] = len - 2;
 		hexdump(_sendbuffer, len);
-		this->_client->write((uint8_t*)_sendbuffer, len);
+		this->_client->write((char *)_sendbuffer, len);
 		this->_currentState = waitingForConnectACK;
 	}
 
@@ -165,6 +185,28 @@ private:
 		return result;
 	}
 
+	static void onAck(void *arg, AsyncClient* client, size_t len, uint32_t time)
+	{
+		Serial.print("ACK:");
+		Serial.println(len);
+		Serial.println(_myinstance->_currentState);
+
+		if (_myinstance->_currentState == waitingforack)
+		{
+			size_t sent = client->write(_myinstance->_sendbuffer + len, MiniMqttClient::_oldlen - len);
+			if (sent == MiniMqttClient::_oldlen - len)
+			{
+				Serial.println("SENT!");
+				_myinstance->_currentState = doingnil;
+			}
+			else
+			{
+				Serial.println("Error in sent");
+			}
+		}
+
+	}
+
 	void sendFileResponse(char *filename, char* correlation, bool onoff, int deviceId)
 	{
 		char* formatSwitch = this->loadFile(filename);
@@ -176,8 +218,106 @@ private:
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
 		len += addSwitchResponse(_sendbuffer+len, formatSwitch, correlation, onoff, deviceId);
-		this->_client->write((uint8_t*)_sendbuffer, len);
+		int sent=this->_client->write((char *)_sendbuffer, len);
+		if (sent < len)
+		{
+			_myinstance->_currentState = waitingforack;
+			Serial.println("waiting for ack");
+			MiniMqttClient::_oldlen = len;
+			MiniMqttClient::_remain = sent;
+		}
 		free(formatSwitch);
+	}
+
+	static void handleOnConnect(void *arg, AsyncClient* client)
+	{
+		_myinstance->sendConnect();
+	}
+
+	static void handleData(void* arg, AsyncClient* client, void *data, size_t len)
+	{
+		char *rcvbuffer = (char *)data;
+		Serial.print("Received ");
+		Serial.println(len);
+		if (_myinstance->_currentState == waitingformore)
+		{
+			if (len + MiniMqttClient::_oldlen == MiniMqttClient::_remain + 3)
+			{
+				Serial.println("Frame finished");
+				_myinstance->_currentState = doingnil;
+				memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
+				if (_myinstance->_onMessage != 0)
+				{
+					_myinstance->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_remain+3);
+				}
+
+				return;
+			}
+			else
+			{
+				if (len + MiniMqttClient::_oldlen < MiniMqttClient::_remain)
+				{
+					Serial.println("Appending incomplete frame");
+					memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
+					MiniMqttClient::_oldlen += len;
+					return;
+				}
+				else
+				{
+					Serial.println("FEHLER im waiting!");
+					_myinstance->_currentState = doingnil;
+					return;
+				}
+			}
+		}
+		if (len > 3 && rcvbuffer[0] == MQTTSTATUS_CONNACK && rcvbuffer[3] == 0)
+		{
+			Serial.println("sending subscription request");
+			_myinstance->subscribe((char *)"command/#");
+		}
+
+		if (len > 4 && rcvbuffer[0] == MQTTSTATUS_SUBSCRIBEACK && rcvbuffer[4] != 0x80)
+		{
+			Serial.println("subscription ack");
+			_myinstance->pingmillis = millis() + (1000 * 30);
+		}
+
+		if (len > 1 && rcvbuffer[0] == MQTTSTATUS_PINGACK)
+		{
+			Serial.println("PONG");
+		}
+
+		if (len > 4  && rcvbuffer[0] == MQTTSTATUS_MESSAGE)
+		{
+			Serial.print("remaining len read: ");
+			size_t remain = _myinstance->getRemainLength(rcvbuffer + 1);
+			if (len - 3 < remain)
+			{
+				if (MiniMqttClient::_rcvbuffer != 0)
+				{
+					free(MiniMqttClient::_rcvbuffer);
+				}
+
+				MiniMqttClient::_rcvbuffer =(char *)malloc(remain + 3);
+				memcpy(MiniMqttClient::_rcvbuffer, rcvbuffer, len);
+				MiniMqttClient::_oldlen = len;
+				MiniMqttClient::_remain = remain;
+				_myinstance->_currentState = waitingformore;
+				Serial.println("WAITING FOR MORE. Starting FRAME.");
+				return;
+			}
+			if (_myinstance->_onMessage != 0)
+			{
+				_myinstance->_onMessage(rcvbuffer,len);
+			}
+			Serial.println();
+		}
+
+	}
+
+	static void handleDisconnect(void *arg, AsyncClient* client)
+	{
+		Serial.println("Disconnect and self destruct");
 	}
 
 
@@ -194,9 +334,11 @@ public:
 		this->_onMessage = 0;
 		Serial.print("clientId");
 		Serial.println(this->_clientId);
+		MiniMqttClient::_myinstance = this;
+		MiniMqttClient::_rcvbuffer = 0;
 	}
 
-	void setCallback(std::function<void(String&)> callback)
+	void setCallback(std::function<void(char*,int)> callback)
 	{
 		this->_onMessage = callback;
 	}
@@ -214,7 +356,7 @@ public:
 		len = addToSendbuffer(topic, len);
 		// extra byte (Qos)
 		_sendbuffer[len++] = 0;
-		this->_client->write((uint8_t*)_sendbuffer, len);
+		this->_client->write((char*)_sendbuffer, len);
 		this->_currentState = doingnil;
 		return true; 
 	}
@@ -265,7 +407,7 @@ public:
 		}
 
 		len += addDiscoveryFooter(_sendbuffer + len, formatfooter);
-		this->_client->write((uint8_t*)_sendbuffer, len);
+		this->_client->write((char*)_sendbuffer, len);
 		free(formatheader);
 		free(formatdevice);
 		free(formatfooter);
@@ -275,10 +417,12 @@ public:
 	{
 		if (this->_currentState != waitingForConnect)
 		{
-			this->_client = new SyncClient();
-			int result = _client->connect(this->_server, this->_port);
-			Serial.print("Connected to server:");
-			Serial.println(result);
+			this->_client = new AsyncClient();
+			_client->onConnect(&handleOnConnect, this->_client);
+			_client->onData(&handleData);
+			_client->onDisconnect(&handleDisconnect);
+			_client->onAck(&onAck);
+			_client->connect(this->_server, this->_port);
 			this->_currentState = waitingForConnect;
 		}
 	}
@@ -292,47 +436,6 @@ public:
 				this->sendPing();
 			}
 
-			if (this->_currentState == waitingForConnect)
-			{
-				Serial.println("sending");
-				this->sendConnect();
-			}
-
-			if (this->_client->available())
-			{
-				memset(_rcvbuffer, 0, sizeof(_rcvbuffer));
-				int bytesRead = this->_client->readBytes(_rcvbuffer, sizeof(_rcvbuffer)-1);
-				Serial.print("bytes read: ");
-				Serial.println(bytesRead);
-				//hexdump(_rcvbuffer, bytesRead);
-
-				if (bytesRead > 3 &&_rcvbuffer[0] == MQTTSTATUS_CONNACK && _rcvbuffer[3]==0)
-				{
-					Serial.println("sending subscription request");
-					this->subscribe((char *)"command/#");
-				}
-
-				if (bytesRead > 4 && _rcvbuffer[0] == MQTTSTATUS_SUBSCRIBEACK && _rcvbuffer[4] != 0x80)
-				{
-					Serial.println("subscription ack");
-					this->pingmillis = millis() + (1000 * 30);
-				}
-
-				if (bytesRead > 1 && _rcvbuffer[0] == MQTTSTATUS_PINGACK)
-				{
-					Serial.println("PONG");
-				}
-
-				if (bytesRead > 4 && bytesRead < 1500 && _rcvbuffer[0] == MQTTSTATUS_MESSAGE)
-				{
-					if (this->_onMessage != 0)
-					{
-						String mystring = _rcvbuffer+5;
-						this->_onMessage(mystring);
-					}
-					Serial.println();
-				}
-			}
 		}
 		else
 		{
@@ -341,3 +444,8 @@ public:
 		return;
 	}
 };
+
+MiniMqttClient* MiniMqttClient::_myinstance;
+char* MiniMqttClient::_rcvbuffer;
+size_t MiniMqttClient::_oldlen;
+size_t MiniMqttClient::_remain;
