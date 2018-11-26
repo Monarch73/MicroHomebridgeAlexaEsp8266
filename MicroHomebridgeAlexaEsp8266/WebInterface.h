@@ -10,7 +10,7 @@ private:
 	Estore* _estore;
 	ESP8266WebServer* _webserver;
 	volatile char *_urlToCall = NULL;
-	std::function<void(dipswitch,int,bool)> _callBackSwitch;
+	std::function<void(dipswitch*,int,bool)> _callBackSwitch;
 
 	int addStringToMemory(char *buf, char *txt)
 	{
@@ -44,7 +44,7 @@ private:
 	}
 
 public:
-	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch,int,bool)> callbackSwitch)
+	WebInterface(Estore* estore, ESP8266WebServer* web, std::function<void(dipswitch*,int,bool)> callbackSwitch)
 	{
 		this->_estore = estore;
 		this->_webserver = web;
@@ -280,19 +280,20 @@ public:
 					{
 						if (onoff == 1)
 						{
-							this->_callBackSwitch(dp, nummer,true);
+							this->_callBackSwitch(&dp, nummer,true);
+							break;
 						}
 						else
 						{
-							this->_callBackSwitch(dp, nummer, false);
+							this->_callBackSwitch(&dp, nummer, false);
+							break;
 						}
 					}
 					currentLight++;
 				}
 			}
 		}
-
-	_webserver->send(200, "");
+		_webserver->send(200, "");
 	}
 	
 	void handleSetupSSID()

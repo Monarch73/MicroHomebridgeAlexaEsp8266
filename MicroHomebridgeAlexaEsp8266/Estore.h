@@ -102,7 +102,7 @@ public:
 		if (!fs)
 		{
 				Serial.println("SPIFFS unable to open storage");
-				return;
+				goto InitializeSpiffs;
 		}
 
 		if (fs.size() != memorysize)
@@ -245,7 +245,6 @@ public:
 			SPIFFS.end();
 			setupEeprom(true);
 		}
-
 
 		File fs = SPIFFS.open("/EEPROM.TXT", "r+");
 		if (!fs)

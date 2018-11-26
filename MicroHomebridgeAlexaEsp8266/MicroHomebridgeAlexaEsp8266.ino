@@ -48,8 +48,8 @@
 #include "FtpServ.h"
 #include "StrFunc.h"
 
-//const char* mqtt_server = "homebridge.cloudwatch.net";
-const char* mqtt_server = "192.168.1.136";
+const char* mqtt_server = "homebridge.cloudwatch.net";
+//const char* mqtt_server = "192.168.1.136";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "#";
 
@@ -74,11 +74,11 @@ void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcar
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
 }
 
-void switchCallBack(dipswitch dp, int number, bool on)
+void switchCallBack(dipswitch* dp, int number, bool on)
 {
 	if (remote !=0 )
 	{
-		remote->Send(&dp,number, on);
+		remote->Send(dp,number, on);
 	}
 }
 
@@ -159,7 +159,7 @@ void EnterApMode()
 	ftp = new FtpServ((char *)"",(char *)"");
 	ftp->begin();
 	web = new ESP8266WebServer(80);
-	ui = new WebInterface(estore, web, switchCallBack);
+	ui = new WebInterface(estore, web, &switchCallBack);
 	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
 	web->on("/", HTTP_GET, WrapperSetupRoot);
 	web->on("/setup", HTTP_POST, WrapperSetupSSID);
@@ -343,7 +343,7 @@ void setup() {
 	ftp = new FtpServ((char *)"", (char *)"");
 	ftp->begin();
 	web = new ESP8266WebServer(80);
-	ui = new WebInterface(estore, web, switchCallBack);
+	ui = new WebInterface(estore, web, &switchCallBack);
 	remote = new RemoteControl((RCSwitch*)&mySwitch,myIr,(WebInterface *)ui);
 	on(WrapperHandleAngular,"/", HTTP_ANY);
 	web->on("/jsonList", HTTP_GET, WrapperHandleJsonList);
