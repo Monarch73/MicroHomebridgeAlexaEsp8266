@@ -4,7 +4,7 @@ Homebridge-server implemantation for alexa on the esp8266
 
 This Project uses an esp8266 board as a hub to control RF-Switches via Amazon Echo (Alexa) by leveraging a homebridge skill.
 
-Status of this dokumentation is incomplete. Parts that still need work are marked by @@todo
+Status of this documentation is incomplete. Parts that still need work are marked by @@todo
 
 
 
@@ -27,7 +27,7 @@ To use IR-Functionality, connect the annode of an IR-LED to RX (GPIO3) and catho
 
 # Usage
 
-First thing you need is to activate and register the homebridge skill.
+First thing you need is to activate and register a skill called "homebridge".
 Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please make sure, that the ftp-client supports PORT Command and uses only one simultanous connection. Filezilla will do just fine. Just make sure, that it does not try to make use of any connection security features.
 If you encounter any connection problems, please make sure that windows-firewall does not block an incoming connection requests from the esp8266.
 The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. Use your ftp-client to upload the .json and .gz files from the download location. Any credentials will be accepted. There is no specific FTP-Password. 
