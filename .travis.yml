@@ -11,7 +11,7 @@ script:
   - cd esp8266/tools
   - python get.py
   - cd $TRAVIS_BUILD_DIR
-  - make -f $HOME/makeEspArduino/makeEspArduino/makeEspArduino.mk ESP_ROOT=$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266 BOARD=d1_mini SKETCH=$TRAVIS_BUILD_DIR/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/EEPROM/ $TRAVIS_BUILD_DIR/libraries/AsyncTCP/src/ $TRAVIS_BUILD_DIR/libraries/IRRemote/src/ $TRAVIS_BUILD_DIR/libraries/rcswitch/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/Hash/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/"
+  - make -f $HOME/makeEspArduino/makeEspArduino/makeEspArduino.mk ESP_ROOT=$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266 BOARD=d1_mini SKETCH=$TRAVIS_BUILD_DIR/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/EEPROM/ $TRAVIS_BUILD_DIR/libraries/AsyncTCP/src/ $TRAVIS_BUILD_DIR/libraries/IRRemote/src/ $TRAVIS_BUILD_DIR/libraries/rcswitch/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/Hash/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/" all
 
 notifications:
   email:
