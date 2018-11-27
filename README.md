@@ -12,7 +12,7 @@ Status of this documentation is incomplete. Parts that still need work are marke
 
 The release file is designed to run on D1-Mini-R2, NodeMCU and ESP-01 compatible esp8266 boards. 
 Just download the esp8266 flash tool from [github](https://github.com/nodemcu/nodemcu-flasher)
-and flash the latest released rfbridge2.bin. 
+and flash the latest released MicroHomebridge.bin. 
 
 Check [here](https://www.monarch.de/index.php/s/RciDX8qf7x6PZSF?fbclid=IwAR2A837Jk7Xk7Gx5ad6TaKzAOVZIbkrlCuBSjCVWE28rNqn9v6d1KkzC2x0)
 
@@ -31,7 +31,7 @@ First thing you need is to activate and register a skill called "homebridge".
 Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please make sure, that the ftp-client supports PORT Command and uses only one simultanous connection. Filezilla will do just fine. Just make sure, that it does not try to make use of any connection security features.
 If you encounter any connection problems, please make sure that windows-firewall does not block an incoming connection requests from the esp8266.
 The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. Use your ftp-client to upload the .json and .gz files from the download location. Any credentials will be accepted. There is no specific FTP-Password. 
-Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password. You will also have to enter you credentials to the homebridge skill. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where RFBridge stores configuration data permanently. Click Save and reset the device.
+Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password. You will also have to enter you credentials to the homebridge skill. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where Microhomebridge stores configuration data permanently. Click Save and reset the device.
 
 The esp8266 will now connect to the network. To identify the IP of your device, You can either use a network scanner (ie "Net Scan" for Android Devices) or a usp port monitor.
 Browse to the ip of your device.
@@ -83,9 +83,9 @@ execute get.py in hardware/esp8266/esp8266/tools
 cd hardware/esp8266/esp8266/tools
 python get.py
 ```
-Start Arduino IDE and configure the newly cloned "MicroHomebridge" directory as your sketchbook-folder in settings. (ctrl ,). Also please remove the urls for the boardmanager that you might have added previously. RFBridge2 doesn't require these settings. Hit ok and ignore popup about availability of updates for libraries. Don't update! The versions of the submodules are release verions.
+Start Arduino IDE and configure the newly cloned "MicroHomebridge" directory as your sketchbook-folder in settings. (ctrl ,). Also please remove the urls for the boardmanager that you might have added previously. MicroHomebridge doesn't require these settings. Hit ok and ignore popup about availability of updates for libraries. Don't update! The versions of the submodules are release verions.
 
-Now you should be ready open RFBridge2.ino, compile and flash it.
+Now you should be ready open Microhomebridge.ino, compile and flash it.
 
 ## Visual Studio Community 2017
 

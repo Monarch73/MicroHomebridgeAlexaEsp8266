@@ -49,6 +49,7 @@
     <None Include="data\switch.json">
       <Filter>data</Filter>
     </None>
+    <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">
