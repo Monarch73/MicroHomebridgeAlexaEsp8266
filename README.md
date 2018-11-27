@@ -14,7 +14,7 @@ The release file is designed to run on D1-Mini-R2, NodeMCU and ESP-01 compatible
 Just download the esp8266 flash tool from [github](https://github.com/nodemcu/nodemcu-flasher)
 and flash the latest released rfbridge2.bin. 
 
-Check [here](https://www.monarch.de/index.php/apps/files/?dir=/microhomebridge&fileid=14539)
+Check [here](https://www.monarch.de/index.php/s/RciDX8qf7x6PZSF?fbclid=IwAR2A837Jk7Xk7Gx5ad6TaKzAOVZIbkrlCuBSjCVWE28rNqn9v6d1KkzC2x0)
 
 Sometimes it might be nessesary to erase the flash storage that is hooked up to you esp8266. In this case I recommend the Esp8266-Download-tool from Expressif.
 
@@ -39,7 +39,7 @@ Browse to the ip of your device.
 Add a switch
 In the "Switch Configuration" section, specify a name for the switch. This name will be recognized by the Echo later on so it's best to specify a distinct name.
 
-There are 4 ways to control devices that RFBridge2 supports:
+There are 4 ways to control devices that MicroHomebridge supports:
 
 Option 1.) Remote Control Sockets with DIP-Switch configuration
 
@@ -99,8 +99,8 @@ Requirements for Windows users
 
 Setup the project
 
-- recursivly clone the project and all submodules to an empty directory (git clone --recursive https://github.com/Monarch73/RFBridge2.git)
-- change the directory to RFBridge2\hardware\esp8266\esp8266\tools directory and run the get.py-file
+- recursivly clone the project and all submodules to an empty directory (git clone --recursive https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266.git)
+- change the directory to MicroHomebridgeAlexaEsp8266\hardware\esp8266\esp8266\tools directory and run the get.py-file
 
 ```sh
 c:
