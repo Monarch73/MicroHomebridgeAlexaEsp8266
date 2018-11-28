@@ -14,7 +14,7 @@ script:
   - make -f $HOME/makeEspArduino/makeEspArduino/makeEspArduino.mk ESP_ROOT=$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266 BOARD=d1_mini FLASH_DEF=4M2M SKETCH=$TRAVIS_BUILD_DIR/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/EEPROM/ $TRAVIS_BUILD_DIR/libraries/AsyncTCP/src/ $TRAVIS_BUILD_DIR/libraries/IRRemote/src/ $TRAVIS_BUILD_DIR/libraries/rcswitch/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/Hash/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/" all
   - make -f $HOME/makeEspArduino/makeEspArduino/makeEspArduino.mk ESP_ROOT=$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266 BOARD=generic FLASH_DEF=1M256 SKETCH=$TRAVIS_BUILD_DIR/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/EEPROM/ $TRAVIS_BUILD_DIR/libraries/AsyncTCP/src/ $TRAVIS_BUILD_DIR/libraries/IRRemote/src/ $TRAVIS_BUILD_DIR/libraries/rcswitch/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/Hash/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/" all
   - make -f $HOME/makeEspArduino/makeEspArduino/makeEspArduino.mk ESP_ROOT=$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266 BOARD=nodemcuv2 FLASH_DEF=4M2M SKETCH=$TRAVIS_BUILD_DIR/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="$TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/EEPROM/ $TRAVIS_BUILD_DIR/libraries/AsyncTCP/src/ $TRAVIS_BUILD_DIR/libraries/IRRemote/src/ $TRAVIS_BUILD_DIR/libraries/rcswitch/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/Hash/src/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ $TRAVIS_BUILD_DIR/hardware/esp8266/esp8266/libraries/" all
-  - tar -cf $TRAVIS_BUILD_DIR/MicroHomebridge.tar /tmp/mkESP/MicroHomebridgeAlexaEsp8266_d1_mini/MicroHomebridgeAlexaEsp8266.bin /tmp/mkESP/MicroHomebridgeAlexaEsp8266_generic/MicroHomebridgeAlexaEsp8266.bin /tmp/mkESP/MicroHomebridgeAlexaEsp8266_nodemcuv2/MicroHomebridgeAlexaEsp8266.bin
+  - tar -cf MicroHomebridge.tar /tmp/mkESP/MicroHomebridgeAlexaEsp8266_d1_mini/MicroHomebridgeAlexaEsp8266.bin /tmp/mkESP/MicroHomebridgeAlexaEsp8266_generic/MicroHomebridgeAlexaEsp8266.bin /tmp/mkESP/MicroHomebridgeAlexaEsp8266_nodemcuv2/MicroHomebridgeAlexaEsp8266.bin
 
 notifications:
   email:
@@ -24,7 +24,8 @@ notifications:
 deploy:
   provider: releases
   api_key: "e8f7db4718d098399580cc67dfde3321ad08c089"
-  file: $TRAVIS_BUILD_DIR/MicroHomebridge.tar
+  file_glob: true
+  file: MicroHomebridge.tar
   skip_cleanup: true
   on:
     tags: true
