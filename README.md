@@ -120,3 +120,13 @@ python get.py
 - select "tools->visualstudio->rescan toolchains and libraries".
 
 Visual Studio should now be prepared to open the solution file (.sln) and compile the project.
+
+## Jenkins Build Agent
+
+For the deployment files the following buildscript was used. Please note that the script assumes a agent running on Linux OR inside a Windows Linux Subsystem:
+
+```sh
+
+```
+
+Have fun

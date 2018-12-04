@@ -52,8 +52,8 @@
 #include "StrFunc.h"
 #include "SecureConnection.h"
 
-//const char* mqtt_server = "homebridge.cloudwatch.net";
-const char* mqtt_server = "192.168.1.136";
+const char* mqtt_server = "homebridge.cloudwatch.net";
+//const char* mqtt_server = "192.168.1.136";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "#";
 
