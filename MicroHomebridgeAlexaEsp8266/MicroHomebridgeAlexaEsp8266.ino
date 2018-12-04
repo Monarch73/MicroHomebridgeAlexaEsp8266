@@ -246,7 +246,7 @@ char *getMessageStampDup(char *buffer, int len)
 	char *endCorrelationIdPos = StrFunc::indexOf(startMessageId, endCorrelationId, (buffer + len) - startMessageId);
 	if (!endCorrelationIdPos)
 	{
-		MiniMqttClient::hexdump(buffer, len);
+		MiniMqttClient::MNOhexdump(buffer, len);
 		Serial.printf("FEHLER: ende nicht gefunden");
 		while (true);
 	}

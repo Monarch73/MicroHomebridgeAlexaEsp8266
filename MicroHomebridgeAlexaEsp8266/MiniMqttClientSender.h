@@ -237,9 +237,8 @@ public:
 		len = this->addToSendbuffer(this->_username, len);
 		len = this->addToSendbuffer(this->_password, len);
 		_sendbuffer[1] = len - 2;
-		hexdump(_sendbuffer, len);
+		//hexdump(_sendbuffer, len);
 		this->_client->write((char *)_sendbuffer, len);
-		this->_currentState = waitingForConnectACK;
 	}
 
 	static void handleAck(void *arg, AsyncClient* client, size_t len, uint32_t time)

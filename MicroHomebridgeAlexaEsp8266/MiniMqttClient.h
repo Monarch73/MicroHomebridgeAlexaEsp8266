@@ -82,7 +82,11 @@ private:
 
 	static void handleOnConnect(void *arg, AsyncClient* client)
 	{
-		MiniMqttClient::_myinstance->_sender->sendConnect();
+		if (MiniMqttClient::_myinstance->_sender != 0)
+		{
+			MiniMqttClient::_myinstance->_sender->sendConnect();
+			MiniMqttClient::_myinstance->_currentState = waitingForConnectACK;
+		}
 	}
 
 	static void handleData(void* arg, AsyncClient* client, void *data, size_t len)
@@ -219,12 +223,14 @@ public:
 	{
 		if (this->_currentState != waitingForConnect)
 		{
+			Serial.print("Connecting to ");
+			Serial.println(this->_server);
 			this->_client = new AsyncClient();
-			_client->onConnect(&handleOnConnect, this->_client);
-			_client->onData(&handleData);
-			_client->onDisconnect(&handleDisconnect);
-			_client->onAck(&MiniMqttClientSender::handleAck);
-			_client->connect(this->_server, this->_port);
+			this->_client->onConnect(&handleOnConnect, this->_client);
+			this->_client->onData(&handleData);
+			this->_client->onDisconnect(&handleDisconnect);
+			this->_client->onAck(&MiniMqttClientSender::handleAck);
+			this->_client->connect(this->_server, this->_port);
 			this->_sender->setClient(this->_client);
 			this->_currentState = waitingForConnect;
 		}
@@ -273,7 +279,7 @@ public:
 		return;
 	}
 
-	static void hexdump(char *txt, int len)
+	static void MNOhexdump(char *txt, int len)
 	{
 		char buf[10];
 		for (int i = 0; i < len; i++)
