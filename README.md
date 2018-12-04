@@ -15,8 +15,9 @@ Just download the esp8266 flash tool from [github](https://github.com/nodemcu/no
 and flash the latest released MicroHomebridge.bin. 
 
 Check [here](https://www.monarch.de/index.php/s/RciDX8qf7x6PZSF?fbclid=IwAR2A837Jk7Xk7Gx5ad6TaKzAOVZIbkrlCuBSjCVWE28rNqn9v6d1KkzC2x0)
+Download all files and unzip the tar-bzip2 file. It contains all supported precompiled binaries.
 
-Sometimes it might be nessesary to erase the flash storage that is hooked up to you esp8266. In this case I recommend the Esp8266-Download-tool from Expressif.
+Sometimes it might be nessesary to erase the flash storage of the esp8266. In this case I recommend the Esp8266-Download-tool from Expressif.
 
 # Wiring
 
@@ -27,7 +28,7 @@ To use IR-Functionality, connect the annode of an IR-LED to RX (GPIO3) and catho
 
 # Usage
 
-First thing you need is to activate and register a skill called "homebridge".
+First thing you need is to activate and register a skill called "homebridge" with you alexa device.
 Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please make sure, that the ftp-client supports PORT Command and uses only one simultanous connection. Filezilla will do just fine. Just make sure, that it does not try to make use of any connection security features.
 If you encounter any connection problems, please make sure that windows-firewall does not block an incoming connection requests from the esp8266.
 The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. Use your ftp-client to upload the .json and .gz files from the download location. Any credentials will be accepted. There is no specific FTP-Password. 
