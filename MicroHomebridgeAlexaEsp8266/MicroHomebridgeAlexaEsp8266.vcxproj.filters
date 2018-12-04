@@ -50,6 +50,7 @@
       <Filter>data</Filter>
     </None>
     <None Include="..\README.md" />
+    <None Include="..\.travis.yml" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">
@@ -77,6 +78,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StrFunc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecureConnection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniMqttClientSender.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

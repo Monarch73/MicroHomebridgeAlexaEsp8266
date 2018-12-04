@@ -5,6 +5,8 @@
 */
 
 // the setup function runs once when you press reset or power the board
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include <ESP8266HTTPClient.h>
 #include <ir_Trotec.h>
 #include <ir_Toshiba.h>
@@ -40,6 +42,7 @@
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+
 #include "MiniMqttClient.h"
 #include "WebInterface.h"
 #include "Estore.h"
@@ -47,9 +50,10 @@
 #include "RemoteControl.h"
 #include "FtpServ.h"
 #include "StrFunc.h"
+#include "SecureConnection.h"
 
-const char* mqtt_server = "homebridge.cloudwatch.net";
-//const char* mqtt_server = "192.168.1.136";
+//const char* mqtt_server = "homebridge.cloudwatch.net";
+const char* mqtt_server = "192.168.1.136";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "#";
 
@@ -65,13 +69,19 @@ RemoteControl* remote = 0;
 RCSwitch mySwitch = RCSwitch();
 IRsend *myIr;
 FtpServ *ftp;
-
+bool otaEnabled = false;
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
 unsigned int lastDiscoveryResponse =0;
 
 void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcard = '*') {
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
+}
+
+void WrapperTestMQTTS()
+{
+	SecureConnection* testSSL = new SecureConnection();
+	testSSL->connect();
 }
 
 void switchCallBack(dipswitch* dp, int number, bool on)
@@ -187,6 +197,30 @@ void setup_wifi() {
 	Serial.println("WiFi connected");
 	Serial.println("IP address: ");
 	Serial.println(WiFi.localIP());
+	if (!MDNS.begin("hb-alexa")) 
+	{             // Start the mDNS responder for esp8266.local
+		Serial.println("Error setting up MDNS responder!");
+	}
+
+	ArduinoOTA.onStart([]() {
+		Serial.println("Start updating spiffs");
+	});
+	ArduinoOTA.onEnd([]() {
+		Serial.println("\nEnd");
+	});
+	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+		__asm__("nop\n\t");
+	});
+	ArduinoOTA.onError([](ota_error_t error) {
+		Serial.printf("Error[%u]: ", error);
+		if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+		else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+		else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+		else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+		else if (error == OTA_END_ERROR) Serial.println("End Failed");
+	});
+	ArduinoOTA.begin();
+	otaEnabled = true;
 }
 
 void connect() {
@@ -350,6 +384,7 @@ void setup() {
 	web->on("/estore", HTTP_POST , WrapperHandleEStore);
 	web->on("/edelete", HTTP_GET, WrapperHandleEDelete);
 	web->on("/esocket", HTTP_GET, WarpperHandleESocket);
+	web->on("/test", HTTP_GET, WrapperTestMQTTS);
 	web->onNotFound(WrapperNotFound);
 	const char * headerkeys[] = { "User-Agent","Cookie", "If-Modified-Since" };
 	size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
@@ -370,6 +405,11 @@ void loop() {
 	if (web != 0)
 	{
 		web->handleClient();
+	}
+
+	if (otaEnabled)
+	{
+		ArduinoOTA.handle();
 	}
 
 	if ((urlToCall2 = ui->GetUrlToCall()) != NULL)

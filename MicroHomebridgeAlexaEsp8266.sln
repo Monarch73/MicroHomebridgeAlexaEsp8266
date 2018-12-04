@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MicroHomebridgeAlexaEsp8266", "MicroHomebridgeAlexaEsp8266\MicroHomebridgeAlexaEsp8266.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ArduinoOTA", "hardware\esp8266\esp8266\libraries\ArduinoOTA\ArduinoOTA.vcxitems", "{68F5EF91-7D8D-4DA1-9F70-BFC72933B598}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ESP8266mDNS", "hardware\esp8266\esp8266\libraries\ESP8266mDNS\ESP8266mDNS.vcxitems", "{1C373104-9034-4AD0-903C-BAF8EF648410}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86

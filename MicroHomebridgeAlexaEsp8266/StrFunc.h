@@ -6,6 +6,8 @@ public:
 	~StrFunc();
 	static char* indexOf(char *, char*, size_t);
 	static char* substrdup(char *, size_t );
+	static int commaCount(char*);
+
 private:
 
 };
@@ -65,4 +67,15 @@ char* StrFunc::indexOf(char* buf, char*needle, size_t buflen)
 	}
 
 	return 0;
+}
+
+int StrFunc::commaCount(char *buf)
+{
+	int result = 0;
+	for (size_t i = 0; i < strlen(buf); i++)
+	{
+		if (buf[i] == ',') result++;
+	}
+
+	return result;
 }
