@@ -48,12 +48,14 @@ private:
 
 	void sendPing()
 	{
-		int len = 0;
-		_sendbuffer[len++] = 0x0c0;
-		_sendbuffer[len++] = 0;
-		hexdump(_sendbuffer, len);
-		this->_client->write((char *)_sendbuffer, len);
-		this->pingmillis = millis() + (1000 * 30);
+		if (this->_currentState != waitingforack && this->_currentState != readytosend)
+		{
+			int len = 0;
+			_sendbuffer[len++] = 0x0c0;
+			_sendbuffer[len++] = 0;
+			this->_client->write((char *)_sendbuffer, len);
+			this->pingmillis = millis() + (1000 * 30);
+		}
 	}
 
 	int addResponseTopic(char *buf)
@@ -103,6 +105,15 @@ private:
 		return result;
 	}
 
+	void stageSender(int len)
+	{
+		if (_myinstance->_currentState != waitingforack)
+		{
+			_myinstance->_currentState = readytosend;
+		}
+
+		MiniMqttClientSender::_oldlen = len;
+	}
 
 
 
@@ -135,27 +146,36 @@ public:
 
 	void sendFileResponse(char *formatSwitch, char* correlation, bool onoff, int deviceId)
 	{
-		Serial.println("prepaing sending");
-		if (!this->_client->canSend() || _myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend)
+		if (_myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend)
 		{
-			Serial.println("Cannot send");
-			return;
+			Serial.println("Must append");
 		}
 
-		int lenTopic = addResponseTopic(_sendbuffer);
-		int lenPayload = addSwitchResponse(_sendbuffer, formatSwitch, correlation, onoff, deviceId);
+		int len = (_myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend) ? MiniMqttClientSender::_oldlen : 0;
 
-		int len = 0;
+		int lenTopic = addResponseTopic(_sendbuffer+len);
+		int lenPayload = addSwitchResponse(_sendbuffer+len, formatSwitch, correlation, onoff, deviceId);
+
+		len = (_myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend) ? MiniMqttClientSender::_oldlen : 0;
+		Serial.print("Starting to send from ");
+		Serial.println(len);
 		_sendbuffer[len++] = 0x30;
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
 		len += addSwitchResponse(_sendbuffer + len, formatSwitch, correlation, onoff, deviceId);
-		_myinstance->_currentState = readytosend;
-		MiniMqttClientSender::_oldlen = len;
+		
+		this->stageSender(len);
+
 	}
 	
 	void sendDiscoveryResponse(char *msgId, std::map<char *, int> deviceList)
 	{
+		if (!this->_client->canSend() || _myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend)
+		{
+			Serial.println("ERRROR: Cannot send");
+			return;
+		}
+
 		char *formatheader = this->_allFiles->discoveryheader; // this->loadFile((char *)"/discoveryheader.json");
 		char *formatdevice = this->_allFiles->discoverydevice; //this->loadFile((char *)"/discoverydevice.json");
 		char *formatfooter = this->_allFiles->discoveryfooter; // this->loadFile((char *)"/discoveryfooter.json");
@@ -189,7 +209,10 @@ public:
 		}
 
 		len += addDiscoveryFooter(_sendbuffer + len, formatfooter);
-		this->_client->write((char*)_sendbuffer, len);
+		//this->_client->write((char*)_sendbuffer, len);
+		Serial.print("Discovery prepared to send ");
+		Serial.println(len);
+		this->stageSender(len);
 	}
 
 
@@ -205,6 +228,7 @@ public:
 		this->_allFiles->discoveryheader = this->loadFileFromSpiffs((char*)"/discoveryheader.json");
 		this->_allFiles->switchjson = this->loadFileFromSpiffs((char*)"/switch.json");
 		this->_allFiles->state = this->loadFileFromSpiffs((char*)"/state.json");
+		MiniMqttClientSender::_remain = 0;
 
 	}
 
@@ -243,26 +267,22 @@ public:
 
 	static void handleAck(void *arg, AsyncClient* client, size_t len, uint32_t time)
 	{
+		Serial.print("Acked: ");
+		Serial.println(len);
 		if (_myinstance->_currentState == waitingforack)
 		{
-			Serial.print("Sending more bytes: ");
-			Serial.println(MiniMqttClientSender::_oldlen - len);
-			size_t sent = client->write(_myinstance->_sendbuffer + len, MiniMqttClientSender::_oldlen - len);
-			if (sent + MiniMqttClientSender::_remain == MiniMqttClientSender::_oldlen)
+			if (MiniMqttClientSender::_remain + len >= MiniMqttClientSender::_oldlen)
 			{
-				Serial.println("SENT!");
+				Serial.println("SENT");
 				_myinstance->_currentState = doingnil;
+				MiniMqttClientSender::_remain = 0;
+
 			}
 			else
 			{
-				Serial.print("insgesamt: ");
-				Serial.println(MiniMqttClientSender::_oldlen);
-				Serial.print("schritt 1:");
-				Serial.println(len);
-				Serial.print("schritt 2:");
-				Serial.println(sent);
-				Serial.println("Error in sent");
-				while (true);
+				MiniMqttClientSender::_remain += len;
+				Serial.println("sending next bit..");
+				client->write(_myinstance->_sendbuffer + MiniMqttClientSender::_remain, MiniMqttClientSender::_oldlen - MiniMqttClientSender::_remain);
 			}
 		}
 
@@ -281,7 +301,6 @@ public:
 				{
 					this->_currentState = waitingforack;
 					Serial.println("waiting for ack");
-					MiniMqttClientSender::_remain = sent;
 					return;
 				}
 

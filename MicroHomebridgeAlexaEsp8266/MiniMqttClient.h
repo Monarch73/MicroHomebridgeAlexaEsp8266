@@ -181,6 +181,7 @@ private:
 	static void handleDisconnect(void *arg, AsyncClient* client)
 	{
 		Serial.println("Disconnect and self destruct");
+		_myinstance->_currentState = doingnil;
 	}
 
 
