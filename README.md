@@ -125,6 +125,21 @@ Visual Studio should now be prepared to open the solution file (.sln) and compil
 For the deployment files the following buildscript was used. Please note that the script assumes a agent running on Linux OR inside a Windows Linux Subsystem:
 
 ```sh
+git clone --recursive https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266.git mhb
+cd mhb/hardware/esp8266/esp8266/tools
+python get.py
+cd ../../../../..
+git clone https://github.com/plerup/makeEspArduino.git
+make -f makeEspArduino/makeEspArduino.mk ESP_ROOT=mhb/hardware/esp8266/esp8266 BOARD=d1_mini FLASH_DEF=4M2M SKETCH=mhb/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="mhb/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ mhb/hardware/esp8266/esp8266/libraries/EEPROM/ mhb/libraries/AsyncTCP/src/ mhb/libraries/IRRemote/src/ mhb/libraries/rcswitch/ mhb/hardware/esp8266/esp8266/libraries/Hash/src/ mhb/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ mhb/hardware/esp8266/esp8266/libraries/" all
+make -f makeEspArduino/makeEspArduino.mk ESP_ROOT=mhb/hardware/esp8266/esp8266 BOARD=generic FLASH_DEF=1M256 SKETCH=mhb/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="mhb/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ mhb/hardware/esp8266/esp8266/libraries/EEPROM/ mhb/libraries/AsyncTCP/src/ mhb/libraries/IRRemote/src/ mhb/libraries/rcswitch/ mhb/hardware/esp8266/esp8266/libraries/Hash/src/ mhb/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ mhb/hardware/esp8266/esp8266/libraries/" all
+make -f makeEspArduino/makeEspArduino.mk ESP_ROOT=mhb/hardware/esp8266/esp8266 BOARD=nodemcuv2 FLASH_DEF=4M2M SKETCH=mhb/MicroHomebridgeAlexaEsp8266/MicroHomebridgeAlexaEsp8266.ino LIBS="mhb/hardware/esp8266/esp8266/libraries/ESP8266WiFi/src/ mhb/hardware/esp8266/esp8266/libraries/EEPROM/ mhb/libraries/AsyncTCP/src/ mhb/libraries/IRRemote/src/ mhb/libraries/rcswitch/ mhb/hardware/esp8266/esp8266/libraries/Hash/src/ mhb/hardware/esp8266/esp8266/libraries/ESP8266mDNS/ mhb/hardware/esp8266/esp8266/libraries/" all
+mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_d1_mini/MicroHomebridgeAlexaEsp8266.bin MicroHomebridgeAlexaEsp8266_d1_mini.bin
+mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_generic/MicroHomebridgeAlexaEsp8266.bin MicroHomebridgeAlexaEsp8266_generic.bin
+mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_nodemcuv2/MicroHomebridgeAlexaEsp8266.bin MicroHomebridgeAlexaEsp8266_nodemcuv2.bin
+tar -cjf MicroHomebridge_$BUILD_NUMBER.tar.bzip2 MicroHomebridgeAlexaEsp8266_*.bin
+
+
+
 
 ```
 
