@@ -2,10 +2,9 @@
 
 Homebridge-server implemantation for alexa on the esp8266
 
-This Project uses an esp8266 board as a hub to control RF-Switches via Amazon Echo (Alexa) by leveraging a homebridge skill.
+This Project uses an esp8266 board as a hub to control RF-Switches and IFR-Modules via Amazon Echo (Alexa) by leveraging a homebridge skill.
 
 Status of this documentation is incomplete. Parts that still need work are marked by @@todo
-
 
 
 # Flashing the release.
