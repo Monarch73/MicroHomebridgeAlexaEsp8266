@@ -10,12 +10,16 @@ The release file is designed to run on D1-Mini-R2, NodeMCU and ESP-01 compatible
 Just download the esp8266 flash tool from [github](https://github.com/nodemcu/nodemcu-flasher)
 and flash the latest released MicroHomebridge.bin. 
 
+
 Check [here](https://www.monarch.de/index.php/s/RciDX8qf7x6PZSF?fbclid=IwAR2A837Jk7Xk7Gx5ad6TaKzAOVZIbkrlCuBSjCVWE28rNqn9v6d1KkzC2x0)
 Download all files and unzip the tar-bzip2 file. It contains all supported precompiled binaries.
 
-Sometimes it might be nessesary to erase the flash storage of the esp8266. In this case I recommend the Esp8266-Download-tool from Expressif.
-https://www.espressif.com/en/support/download/other-tools
+If nodemcu-flasher does not work for you, you can also use ESPTool to upload the bin file.
 
+(https://github.com/igrr/esptool-ck/releases)
+```sh
+esptool.exe -vv -ce -bz 1M -cd none -cb 921600 -cp "COM7" -ca 0x0 -cz "0x100000" -ca 0x00000 -cf "MicroHomebridgeAlexaEsp8266.ino.bin"
+```
 # Upload of the resource files via FTP
 
 In order for Microhomebridge to function properly, it requires you to upload the *.json and *.gz files. The FTP-Server build-in in Microhomebridge has a limited, basic functionality. It only supports a single concurrent connection.

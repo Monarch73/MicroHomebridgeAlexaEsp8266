@@ -69,8 +69,6 @@ private:
 	/* event callbacks */
 	static void handleDataData(void* arg, AsyncClient* client, void *data, size_t len)
 	{
-		Serial.printf("\n dataconnection received data from %s \n", client->remoteIP().toString().c_str());
-		//Serial.write((uint8_t*)data, len);
 		if (_ctlState == STATE_DOWNLOAD)
 		{
 			_currentFile.write((uint8_t*)data, len);
