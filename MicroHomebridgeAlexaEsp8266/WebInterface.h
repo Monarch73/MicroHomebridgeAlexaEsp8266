@@ -113,7 +113,7 @@ public:
 
 		Serial.println(requestUri);
 		_webserver->sendHeader("Cache-Control", " max-age=120");
-		_webserver->sendHeader("Last-Modified", "Wed, 21 Oct 2019 07:28:00 GMT");
+		_webserver->sendHeader("Last-Modified", "Wed, 21 Oct 2030 07:28:00 GMT");
 
 		if (_webserver->hasHeader("If-Modified-Since"))
 		{

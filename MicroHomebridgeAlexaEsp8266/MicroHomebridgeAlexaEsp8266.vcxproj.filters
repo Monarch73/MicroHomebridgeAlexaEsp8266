@@ -80,9 +80,6 @@
     <ClInclude Include="StrFunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SecureConnection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MiniMqttClientSender.h">
       <Filter>Header Files</Filter>
     </ClInclude>

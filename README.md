@@ -2,10 +2,7 @@
 
 Homebridge-server implemantation for alexa on the esp8266
 
-This Project uses an esp8266 board as a hub to control RF-Switches and IFR-Modules via Amazon Echo (Alexa) by leveraging a homebridge skill.
-
-Status of this documentation is incomplete. Parts that still need work are marked by @@todo
-
+This Project uses an esp8266 board as a hub to control RF-Switches, IFR-Modules via Amazon Echo (Alexa) by leveraging a homebridge skill. You can also send out http-requests. 
 
 # Flashing the release.
 
@@ -17,26 +14,41 @@ Check [here](https://www.monarch.de/index.php/s/RciDX8qf7x6PZSF?fbclid=IwAR2A837
 Download all files and unzip the tar-bzip2 file. It contains all supported precompiled binaries.
 
 Sometimes it might be nessesary to erase the flash storage of the esp8266. In this case I recommend the Esp8266-Download-tool from Expressif.
+https://www.espressif.com/en/support/download/other-tools
+
+# Upload of the resource files via FTP
+
+In order for Microhomebridge to function properly, it requires you to upload the *.json and *.gz files. The FTP-Server build-in in Microhomebridge has a limited, basic functionality. It only supports a single concurrent connection.
+It does not support any connection security features (i.e. SSL/TLS encryption). For filetransfer, the PORT-command is supported only. This requires the ESP-Module to be able to connect to your FTP-Client. In case of connectivity issues, please make sure that you
+disabled all local firewalls (i.e. Windows-Firewall) and disabled peer-seperation feature in your Wifi Access Point.
+
+On first boot, the esp module functions as a wifi hotspot. You will have to connect to a network called "easyalexa".
+The IP-Address is 192.168.4.1. Any username/password will be accepted.
+
+An example configuration in filezilla:
+[[https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp1.PNG|alt=ftp1]]
+
+[[https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp2.PNG|alt=ftp2]]
 
 # Wiring
 
 Connect a [RF-Transmitter Module](https://www.amazon.com/gp/product/B017AYH5G0) to your esp8266 device.
-The data-connector should be connected to D4 (GPIO2). If you are using a different board, you need to look up GPIO2 in the pinout chart of your board and recompile the project for that board.
+The data-connector should be connected (GPIO2). For NodeMcu's and D1mini's , this port is labled D4. On Esp01, its pin3. If you are using a different board, you need to look up GPIO2 in the pinout chart of your board.
 
 To use IR-Functionality, connect the annode of an IR-LED to RX (GPIO3) and cathode through a resistor to GND. The value of the resistor is dependent on the forward-voltage of your IR-Led and the output voltage of your GPIOs. In any case 220 Ohms should be working ok.
 
 # Usage
 
 First thing you need is to activate and register a skill called "homebridge" with you alexa device.
-Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please make sure, that the ftp-client supports PORT Command and uses only one simultanous connection. Filezilla will do just fine. Just make sure, that it does not try to make use of any connection security features.
-If you encounter any connection problems, please make sure that windows-firewall does not block an incoming connection requests from the esp8266.
-The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. Use your ftp-client to upload the .json and .gz files from the download location. Any credentials will be accepted. There is no specific FTP-Password. 
-Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password. You will also have to enter you credentials to the homebridge skill. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where Microhomebridge stores configuration data permanently. Click Save and reset the device.
+Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please refere to the FTP-Section if you haven't done this yet.
+The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. 
+Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password of your Wifi. You will also have to enter you credentials to the homebridge skill. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where Microhomebridge stores configuration data permanently. Click Save and reset the device.
 
 The esp8266 will now connect to the network. To identify the IP of your device, You can either use a network scanner (ie "Net Scan" for Android Devices) or a usp port monitor.
-Browse to the ip of your device.
+Use a WebBrowser to the ip of your device via http on port 80.
+ie.: http://192.168.1.50
 
-Add a switch
+# Add a switch
 In the "Switch Configuration" section, specify a name for the switch. This name will be recognized by the Echo later on so it's best to specify a distinct name.
 
 There are 4 ways to control devices that MicroHomebridge supports:
@@ -59,8 +71,12 @@ this option needs a Infrared LED wired up to your esp8266 module as described ab
 
 Please note, you can only use one option at a time! If you configured more than one option, Microhomebridge might not behave as you'd expect.
  
-Click Save and start the device recover function in the alexa app. The above configured device should be discovered.
+Click Save and start the device recover function in the alexa app. The above configured device should be discovered and should be able to receive voice commands.
 
+# Backup Settings
+
+Microhomebridge stores all information about switches and Wifi-Settings in a SPIFFS-File called "EEPROM.txt". This file is accessable via FTP even during normal operation. You can download and upload this 
+config file as you like. Be advised that you should reboot the esp-board after you exchanged this file.
 
 # Setting up development environment.
 

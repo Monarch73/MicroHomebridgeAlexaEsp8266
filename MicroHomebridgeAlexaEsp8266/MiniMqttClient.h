@@ -96,42 +96,9 @@ private:
 		Serial.println(len);
 		if (_myinstance->_currentState == waitingformore)
 		{
-			Serial.println("Buffering");
 			memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
 			MiniMqttClient::_oldlen += len;
 			return;
-			////if (len + MiniMqttClient::_oldlen == MiniMqttClient::_remain + 3)
-			////{
-			////	Serial.println("Frame finished");
-			////	_myinstance->_currentState = doingnil;
-			////	memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
-			////	if (_myinstance->_onMessage != 0)
-			////	{
-			////		_myinstance->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_remain+3);
-			////	}
-
-			////	return;
-			////}
-			////else
-			////{
-			////	Serial.print("so far: ");
-			////	Serial.print(len + MiniMqttClient::_oldlen);
-			////	Serial.print(" / ");
-			////	Serial.println(MiniMqttClient::_remain);
-			////	if (len + MiniMqttClient::_oldlen < MiniMqttClient::_remain)
-			////	{
-			////		Serial.println("Appending incomplete frame");
-			////		memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
-			////		MiniMqttClient::_oldlen += len;
-			////		return;
-			////	}
-			////	else
-			////	{
-			////		Serial.println("FEHLER im waiting!");
-			////		_myinstance->_currentState = doingnil;
-			////		return;
-			////	}
-			////}
 		}
 		if (len > 3 && rcvbuffer[0] == MQTTSTATUS_CONNACK && rcvbuffer[3] == 0)
 		{
@@ -152,7 +119,6 @@ private:
 
 		if (len > 4  && rcvbuffer[0] == MQTTSTATUS_MESSAGE)
 		{
-			Serial.println("Message incoming");
 			size_t remain = _myinstance->getRemainLength(rcvbuffer + 1);
 			if (len - 3 < remain)
 			{
@@ -162,11 +128,6 @@ private:
 				MiniMqttClient::_oldlen = len;
 				MiniMqttClient::_remain = remain;
 				_myinstance->_currentState = waitingformore;
-				Serial.println("WAITING FOR MORE. Starting FRAME.");
-				Serial.print("len: ");
-				Serial.print(len);
-				Serial.print(" remaining: ");
-				Serial.println(remain);
 				return;
 			}
 			if (_myinstance->_onMessage != 0)
@@ -258,20 +219,12 @@ public:
 						this->_currentState = doingnil;
 						if (MiniMqttClient::_oldlen > MiniMqttClient::_remain + 3)
 						{
-							Serial.println("Handle next frame");
 							this->handleData(0, 0, MiniMqttClient::_rcvbuffer + MiniMqttClient::_remain + 3, MiniMqttClient::_oldlen - (MiniMqttClient::_remain + 3));
 							// there is more to handle
 						}
-						else
-						{
-							Serial.println("Frame finished");
-						}
 					}
-
-
 				}
 			}
-
 		}
 		else
 		{
@@ -279,26 +232,6 @@ public:
 		}
 		return;
 	}
-
-	static void MNOhexdump(char *txt, int len)
-	{
-		char buf[10];
-		for (int i = 0; i < len; i++)
-		{
-			sprintf(buf, "%2x ", txt[i]);
-			Serial.print(buf);
-		}
-
-		Serial.println("");
-		for (int i = 0; i < len; i++)
-		{
-			sprintf(buf, "%2c ", txt[i]);
-			Serial.print(buf);
-		}
-
-		Serial.println("");
-	}
-
 };
 
 MiniMqttClient* MiniMqttClient::_myinstance;

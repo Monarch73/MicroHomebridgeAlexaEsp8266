@@ -50,7 +50,6 @@
 #include "RemoteControl.h"
 #include "FtpServ.h"
 #include "StrFunc.h"
-#include "SecureConnection.h"
 
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.136";
@@ -76,12 +75,6 @@ unsigned int lastDiscoveryResponse =0;
 
 void on(HandlerFunction fn, const String &wcUri, HTTPMethod method, char wildcard = '*') {
 	web->addHandler(new WcFnRequestHandler(fn, wcUri, method, wildcard));
-}
-
-void WrapperTestMQTTS()
-{
-	SecureConnection* testSSL = new SecureConnection();
-	testSSL->connect();
 }
 
 void switchCallBack(dipswitch* dp, int number, bool on)
@@ -246,7 +239,6 @@ char *getMessageStampDup(char *buffer, int len)
 	char *endCorrelationIdPos = StrFunc::indexOf(startMessageId, endCorrelationId, (buffer + len) - startMessageId);
 	if (!endCorrelationIdPos)
 	{
-		MiniMqttClient::MNOhexdump(buffer, len);
 		Serial.printf("FEHLER: ende nicht gefunden");
 		while (true);
 	}
@@ -308,7 +300,6 @@ void message(char *buffer, int len)
 	}
 	else if ((posbuf = StrFunc::indexOf(buffer, turn, len)) > 0)
 	{
-		Serial.println("turn xy response");
 		estore->RefreshList();
 		char *onoffpos = posbuf + strlen(turn);
 		bool onoff = (onoffpos[0] == 'O' && onoffpos[1] == 'n');
@@ -316,10 +307,6 @@ void message(char *buffer, int len)
 		int number = getNumber(buffer,len);
 		estore->dipSwitchLoad(number, &dp);
 		remote->Send(&dp, number, onoff);
-		Serial.print("Number ");
-		Serial.print(number);
-		Serial.print(" is turned ");
-		Serial.println(onoff ? "on" : "off");
 
 		char *messageStamp = getMessageStampDup(buffer, len);
 		if (messageStamp)
@@ -332,9 +319,6 @@ void message(char *buffer, int len)
 	{
 		int	number = getNumber(buffer, len);
 		bool powerstate = remote->getPowerState(number);
-		Serial.print(number);
-		Serial.print(" is ");
-		Serial.println(powerstate ? "On" : "Off");
 		char *messageStamp = getMessageStampDup(buffer, len);
 		if (messageStamp)
 		{
@@ -384,7 +368,6 @@ void setup() {
 	web->on("/estore", HTTP_POST , WrapperHandleEStore);
 	web->on("/edelete", HTTP_GET, WrapperHandleEDelete);
 	web->on("/esocket", HTTP_GET, WarpperHandleESocket);
-	web->on("/test", HTTP_GET, WrapperTestMQTTS);
 	web->onNotFound(WrapperNotFound);
 	const char * headerkeys[] = { "User-Agent","Cookie", "If-Modified-Since" };
 	size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
