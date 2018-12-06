@@ -26,9 +26,8 @@ On first boot, the esp module functions as a wifi hotspot. You will have to conn
 The IP-Address is 192.168.4.1. Any username/password will be accepted.
 
 An example configuration in filezilla:
-[[https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp1.PNG|alt=ftp1]]
-
-[[https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp2.PNG|alt=ftp2]]
+![config1](https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp1.PNG)
+![config1](https://github.com/Monarch73/MicroHomebridgeAlexaEsp8266/blob/master/wiki_resource/ftp2.PNG)
 
 # Wiring
 
@@ -136,7 +135,7 @@ python get.py
 
 Visual Studio should now be prepared to open the solution file (.sln) and compile the project.
 
-## Jenkins Build Agent
+## Jenkins Build Agent or Build script for Linux
 
 For the deployment files the following buildscript was used. Please note that the script assumes a agent running on Linux OR inside a Windows Linux Subsystem:
 
@@ -153,9 +152,6 @@ mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_d1_mini/MicroHomebridgeAlexaEsp8266.bi
 mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_generic/MicroHomebridgeAlexaEsp8266.bin MicroHomebridgeAlexaEsp8266_generic.bin
 mv /tmp/mkESP/MicroHomebridgeAlexaEsp8266_nodemcuv2/MicroHomebridgeAlexaEsp8266.bin MicroHomebridgeAlexaEsp8266_nodemcuv2.bin
 tar -cjf MicroHomebridge_$BUILD_NUMBER.tar.bzip2 MicroHomebridgeAlexaEsp8266_*.bin
-
-
-
 
 ```
 
