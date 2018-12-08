@@ -35,6 +35,7 @@
 #include <ESPAsyncTCPbuffer.h>
 #include <ESPAsyncTCP.h>
 #include <async_config.h>
+//        ^^^^^^^^^^^^^^  config ssl in here!
 #include <AsyncPrinter.h>
 #include <EEPROM.h>
 #include <ESP8266WebServerSecureBearSSL.h>
@@ -52,11 +53,15 @@
 #include "StrFunc.h"
 
 const char* mqtt_server = "homebridge.cloudwatch.net";
-//const char* mqtt_server = "192.168.1.136";
-const int   mqtt_port = 1883;
-const char* mqtt_topic = "#";
+//const char* mqtt_server = "192.168.1.193";
+//const char* mqtt_server = "mqtt.monarch.de.local";
 
-//MQTTClient client;
+#ifdef ASYNC_TCP_SSL_ENABLED
+const int	mqtt_port = 8883;
+#else
+const int   mqtt_port = 1883;
+#endif // ASYNC_TCP_SSL_ENABLED
+
 long lastMsg = 0;
 char msg[50];
 int value = 0;

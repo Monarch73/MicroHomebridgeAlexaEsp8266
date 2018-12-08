@@ -51,6 +51,7 @@
     </None>
     <None Include="..\README.md" />
     <None Include="..\.travis.yml" />
+    <None Include="getserverkey.py" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.MicroHomebridgeAlexaEsp8266.vsarduino.h">

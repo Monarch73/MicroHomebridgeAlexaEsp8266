@@ -51,6 +51,10 @@ The esp8266 will now connect to the network. To identify the IP of your device, 
 Use a WebBrowser to the ip of your device via http on port 80.
 ie.: http://192.168.1.50
 
+# Updating
+
+Microhomebridge sports an OTA Update feature. 
+
 # Add a switch
 In the "Switch Configuration" section, specify a name for the switch. This name will be recognized by the Echo later on so it's best to specify a distinct name.
 

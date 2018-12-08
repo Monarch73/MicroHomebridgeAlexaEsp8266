@@ -11,7 +11,11 @@
 #include <map>
 #include <FS.h>
 #include "MiniMqttClientSender.h"
-
+#if ASYNC_TCP_SSL_ENABLED
+#include <tcp_axtls.h>
+#define SHA1_SIZE 20
+const uint8_t fingerprint[] = { 0x53, 0x65, 0x25, 0x00, 0x27, 0x9c, 0x10, 0xbc, 0xeb, 0xa8, 0x66, 0xdd, 0x91, 0x52, 0x4a, 0xb6, 0xc1, 0x91, 0x39, 0x2e };
+#endif
 #define MQTTSTATUS_CONNACK 0x20
 #define MQTTSTATUS_SUBSCRIBEACK 0x90
 #define MQTTSTATUS_PINGACK 0x0D0
@@ -82,8 +86,19 @@ private:
 
 	static void handleOnConnect(void *arg, AsyncClient* client)
 	{
+		Serial.println("Connected");
 		if (MiniMqttClient::_myinstance->_sender != 0)
 		{
+#if ASYNC_TCP_SSL_ENABLED
+			SSL* clientSsl = client->getSSL();
+
+			if (ssl_match_fingerprint(clientSsl, fingerprint) != SSL_OK) 
+			{
+				Serial.println("fingerprint check failed.");
+				client->close(true);
+
+			}
+#endif
 			MiniMqttClient::_myinstance->_sender->sendConnect();
 			MiniMqttClient::_myinstance->_currentState = waitingForConnectACK;
 		}
@@ -186,13 +201,21 @@ public:
 		if (this->_currentState != waitingForConnect)
 		{
 			Serial.print("Connecting to ");
-			Serial.println(this->_server);
+			Serial.print(this->_server);
+			Serial.print(":");
+			Serial.println(this->_port);
 			this->_client = new AsyncClient();
 			this->_client->onConnect(&handleOnConnect, this->_client);
 			this->_client->onData(&handleData);
 			this->_client->onDisconnect(&handleDisconnect);
 			this->_client->onAck(&MiniMqttClientSender::handleAck);
+#if ASYNC_TCP_SSL_ENABLED
+			Serial.println("via ssl");
+			this->_client->connect(this->_server, this->_port, true);
+#else
 			this->_client->connect(this->_server, this->_port);
+
+#endif
 			this->_sender->setClient(this->_client);
 			this->_currentState = waitingForConnect;
 		}
