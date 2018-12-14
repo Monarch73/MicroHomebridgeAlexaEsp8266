@@ -129,22 +129,23 @@ private:
 			if (line.startsWith("Content-Length:"))
 			{
 				filelen = atoi(line.c_str()+16);
-				result = (char*)malloc(filelen);
+				result = (char*)malloc(filelen+1);
+				result[filelen] = 0;
 				if (!result)
 				{
 					Serial.println("ERROR: Not enough memory");
 					while(1);
 				}
+			}
 
-				if (line == "")
-				{
-					Serial.println("Begin download");
-					size_t readlen = client.readBytes(result, filelen);
-					Serial.print("Read: ");
-					Serial.print(readlen);
-					Serial.print(" / ");
-					Serial.println(filelen);
-				}
+			if (line == "")
+			{
+				Serial.println("Begin download");
+				size_t readlen = client.readBytes(result, filelen);
+				Serial.print("Read: ");
+				Serial.print(readlen);
+				Serial.print(" / ");
+				Serial.println(filelen);
 			}
 		}
 
