@@ -145,7 +145,7 @@ private:
 				_myinstance->_currentState = waitingformore;
 				return;
 			}
-			if (_myinstance->_onMessage != 0)
+			if (_myinstance->_onMessage != 0 && _myinstance->_sender->allFilesLoaded)
 			{
 				_myinstance->_onMessage(rcvbuffer,len);
 			}
@@ -196,6 +196,11 @@ public:
 		this->_sender->sendDiscoveryResponse(msgId, deviceList);
 	}
 
+	bool getAllFilesLoaded()
+	{
+		return this->_sender->allFilesLoaded;
+	}
+
 	void connect()
 	{
 		if (this->_currentState != waitingForConnect)
@@ -238,7 +243,11 @@ public:
 					// message received
 					if (this->_onMessage != 0)
 					{
-						this->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_remain + 3);
+						if (this->_sender->allFilesLoaded)
+						{
+							this->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_remain + 3);
+						}
+
 						this->_currentState = doingnil;
 						if (MiniMqttClient::_oldlen > MiniMqttClient::_remain + 3)
 						{

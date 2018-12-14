@@ -105,6 +105,52 @@ private:
 		return result;
 	}
 
+	char * loadFileFromMonarchDe(char *filename)
+	{
+		WiFiClientSecure client;
+		if (!client.connect("www.monarch.de", 443))
+		{
+			return 0;
+		}
+
+		client.print("GET /remote.php/webdav/microhomebridge");
+		client.print(filename);
+		client.print(" HTTP/1.1\r\n");
+		client.print("Host: www.monarch.de\r\n");
+		client.print("Connection: close\r\n");
+		client.print("User-Agent: Mozilla/4.0 (compatible; esp8266;arduino sdk;)\r\n");
+		client.print("\r\n");
+		size_t filelen=0;
+		char * result =0;
+		while(client.available())
+		{
+			String line = client.readStringUntil('\r');
+			Serial.print(line);
+			if (line.startsWith("Content-Length:"))
+			{
+				filelen = atoi(line.c_str()+16);
+				result = (char*)malloc(filelen);
+				if (!result)
+				{
+					Serial.println("ERROR: Not enough memory");
+					while(1);
+				}
+
+				if (line == "")
+				{
+					Serial.println("Begin download");
+					size_t readlen = client.readBytes(result, filelen);
+					Serial.print("Read: ");
+					Serial.print(readlen);
+					Serial.print(" / ");
+					Serial.println(filelen);
+				}
+			}
+		}
+
+		return result;
+	}
+
 	void stageSender(int len)
 	{
 		if (_myinstance->_currentState != waitingforack)
@@ -120,6 +166,7 @@ private:
 public:
 	unsigned long pingmillis = 0x0fffffff;
 	structJsonFiles* _allFiles;
+	bool allFilesLoaded = false;
 
 	void setClient(AsyncClient* client)
 	{
@@ -225,6 +272,39 @@ public:
 		this->_allFiles->discoveryheader = this->loadFileFromSpiffs((char*)"/discoveryheader.json");
 		this->_allFiles->switchjson = this->loadFileFromSpiffs((char*)"/switch.json");
 		this->_allFiles->state = this->loadFileFromSpiffs((char*)"/state.json");
+
+		if (!this->_allFiles->discoverydevice)
+		{
+			this->_allFiles->discoverydevice = this->loadFileFromMonarchDe((char*)"/discoverydevice.json");
+		}
+
+		if (!this->_allFiles->discoveryfooter)
+		{
+			this->_allFiles->discoveryfooter = this->loadFileFromMonarchDe((char*)"/discoveryfooter.json");
+		}
+
+		if (!this->_allFiles->discoveryheader)
+		{
+			this->_allFiles->discoveryheader = this->loadFileFromMonarchDe((char*)"/discoveryheader.json");
+		}
+
+		if (!this->_allFiles->switchjson)
+		{
+			this->_allFiles->switchjson = this->loadFileFromMonarchDe((char*)"/switch.json");
+		}
+
+		if (!this->_allFiles->state)
+		{
+			this->_allFiles->state = this->loadFileFromSpiffs((char*)"/state.json");
+		}
+
+
+
+		this->allFilesLoaded = (!this->_allFiles->discoverydevice || 
+			!this->_allFiles->discoveryfooter || 
+			!this->_allFiles->discoveryheader || 
+			!this->_allFiles->switchjson ||
+			!this->_allFiles->state);
 		MiniMqttClientSender::_remain = 0;
 
 	}
