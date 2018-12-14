@@ -56,7 +56,7 @@ const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
 //const char* mqtt_server = "mqtt.monarch.de.local";
 
-#ifdef ASYNC_TCP_SSL_ENABLED
+#if ASYNC_TCP_SSL_ENABLED
 const int	mqtt_port = 8883;
 #else
 const int   mqtt_port = 1883;

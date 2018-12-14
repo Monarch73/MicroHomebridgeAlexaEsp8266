@@ -92,8 +92,6 @@ private:
 		File fs = SPIFFS.open(filename, "r");
 		if (!fs)
 		{
-			Serial.println("ERRROR: File not found!");
-			Serial.println(filename);
 			return 0;
 		}
 
@@ -107,48 +105,24 @@ private:
 
 	char * loadFileFromMonarchDe(char *filename)
 	{
-		WiFiClientSecure client;
-		if (!client.connect("www.monarch.de", 443))
+		HTTPClient http;
+		char fnamebuf[80];
+		sprintf(fnamebuf, "http://www.monarch.de/microhomebridge%s", filename);
+		Serial.println(fnamebuf);
+		char *result = 0;
+		if (http.begin(fnamebuf))
 		{
-			return 0;
-		}
-
-		client.print("GET /remote.php/webdav/microhomebridge");
-		client.print(filename);
-		client.print(" HTTP/1.1\r\n");
-		client.print("Host: www.monarch.de\r\n");
-		client.print("Connection: close\r\n");
-		client.print("User-Agent: Mozilla/4.0 (compatible; esp8266;arduino sdk;)\r\n");
-		client.print("\r\n");
-		size_t filelen=0;
-		char * result =0;
-		while(client.available())
-		{
-			String line = client.readStringUntil('\r');
-			Serial.print(line);
-			if (line.startsWith("Content-Length:"))
+			int httpCode = http.GET();
+			if (httpCode > 0)
 			{
-				filelen = atoi(line.c_str()+16);
-				result = (char*)malloc(filelen+1);
-				result[filelen] = 0;
-				if (!result)
+				if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
 				{
-					Serial.println("ERROR: Not enough memory");
-					while(1);
+					String payload = http.getString();
+					result = strdup(payload.c_str());
 				}
 			}
-
-			if (line == "")
-			{
-				Serial.println("Begin download");
-				size_t readlen = client.readBytes(result, filelen);
-				Serial.print("Read: ");
-				Serial.print(readlen);
-				Serial.print(" / ");
-				Serial.println(filelen);
-			}
 		}
-
+     
 		return result;
 	}
 
@@ -205,8 +179,6 @@ public:
 		int lenPayload = addSwitchResponse(_sendbuffer+len, formatSwitch, correlation, onoff, deviceId);
 
 		len = (_myinstance->_currentState == waitingforack || _myinstance->_currentState == readytosend) ? MiniMqttClientSender::_oldlen : 0;
-		Serial.print("Starting to send from ");
-		Serial.println(len);
 		_sendbuffer[len++] = 0x30;
 		len += setRemainLenth(_sendbuffer + len, lenPayload + lenTopic);
 		len += addResponseTopic(_sendbuffer + len);
@@ -296,16 +268,15 @@ public:
 
 		if (!this->_allFiles->state)
 		{
-			this->_allFiles->state = this->loadFileFromSpiffs((char*)"/state.json");
+			this->_allFiles->state = this->loadFileFromMonarchDe((char*)"/state.json");
 		}
 
 
 
-		this->allFilesLoaded = (!this->_allFiles->discoverydevice || 
-			!this->_allFiles->discoveryfooter || 
-			!this->_allFiles->discoveryheader || 
-			!this->_allFiles->switchjson ||
-			!this->_allFiles->state);
+		this->allFilesLoaded = (this->_allFiles->discoverydevice != 0 && this->_allFiles->discoveryfooter != 0 && this->_allFiles->discoveryheader != 0 && this->_allFiles->switchjson != 0 && this->_allFiles->state != 0);
+
+		Serial.print("all files loaded: ");
+		Serial.println(this->allFilesLoaded);
 		MiniMqttClientSender::_remain = 0;
 
 	}
