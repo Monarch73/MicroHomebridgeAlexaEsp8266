@@ -2,7 +2,8 @@
 
 Homebridge-server implemantation for alexa on the esp8266
 
-This Project uses an esp8266 board as a hub to control RF-Switches, IFR-Modules via Amazon Echo (Alexa) by leveraging a homebridge skill. You can also send out http-requests. It's comparable to fauxmoesp without the hassle having to compile the sources yourself. 
+This Project uses an esp8266 board as a hub to control RF-Switches, IFR-Modules via Amazon Echo (Alexa) by leveraging a homebridge skill. You can also send out http-requests. It's comparable to fauxmoesp without the hassle having to compile the sources yourself.
+EspEasydevices can be controlled via http-get requests.
 
 # Flashing the release.
 
