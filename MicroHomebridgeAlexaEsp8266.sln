@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ESP8266mDNS", "hardware\esp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ESP8266HTTPClient", "hardware\esp8266\esp8266\libraries\ESP8266HTTPClient\ESP8266HTTPClient.vcxitems", "{91E81B16-172B-4385-BEA3-FAAC0E5382F9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rfid", "libraries\rfid\rfid.vcxitems", "{A7FEF5BC-781C-489A-8237-EC2CAD2FC524}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86

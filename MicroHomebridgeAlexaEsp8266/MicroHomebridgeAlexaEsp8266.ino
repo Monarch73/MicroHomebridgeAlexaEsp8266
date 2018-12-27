@@ -5,6 +5,10 @@
 */
 
 // the setup function runs once when you press reset or power the board
+#include <require_cpp11.h>
+#include <MFRC522Extended.h>
+#include <MFRC522.h>
+#include <deprecated.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <ESP8266HTTPClient.h>
@@ -43,6 +47,9 @@
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+#include <SPI.h>
+#include <MFRC522.h>
+
 
 #include "MiniMqttClient.h"
 #include "WebInterface.h"
@@ -55,6 +62,8 @@
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
 //const char* mqtt_server = "mqtt.monarch.de.local";
+#define RST_PIN         0           // Configurable, see typical pin layout above
+#define SS_PIN          15          // Configurable, see typical pin layout above
 
 #if ASYNC_TCP_SSL_ENABLED
 const int	mqtt_port = 8883;
@@ -74,6 +83,9 @@ RCSwitch mySwitch = RCSwitch();
 IRsend *myIr;
 FtpServ *ftp;
 bool otaEnabled = false;
+
+MFRC522* mfrc522 = 0; // (SS_PIN, RST_PIN);   // Create MFRC522 instance.
+
 
 typedef std::function<void(WcFnRequestHandler *, String, HTTPMethod)> HandlerFunction;
 unsigned int lastDiscoveryResponse =0;
@@ -331,7 +343,7 @@ void message(char *buffer, int len)
 }
 
 void setup() {
-	Serial.begin(115200);
+	Serial.begin(921600);
 	int zahl = analogRead(A0);
 	Serial.println(zahl);
 	myIr = new IRsend(3);
@@ -346,6 +358,10 @@ void setup() {
 	{
 		estore->setupEeprom();
 	}
+
+	SPI.begin(); // Init SPI bus
+	mfrc522 = new MFRC522(SS_PIN, RST_PIN);
+	mfrc522->PCD_Init();         // Init MFRC522 card
 	
 	if (estore->ssid[0] == 0)
 	{
@@ -410,5 +426,33 @@ void loop() {
 		http.end();
 		ui->SetUrlToCall(NULL);
 		free((void *)urlToCall2);
+	}
+
+	if (mfrc522 != 0)
+	{
+		if (mfrc522->PICC_IsNewCardPresent())
+		{
+			Serial.println("checking card");
+
+			if (mfrc522->PICC_ReadCardSerial())
+			{
+				mfrc522->PICC_DumpToSerial(&(mfrc522->uid));
+				//if (StrFunc::indexOf(codesContents, (char *)mfrc522->uid.uidByte, sizeof(codesContents), (size_t)mfrc522->uid.size) != 0)
+				//{
+				//	Serial.println("match");
+				//}
+				//else
+				//{
+				//	Serial.println("no match");
+				//}
+				//Serial.println("Sending out an sos.");
+				//String url = "http://www.monarch.de/tuer.php?device=" + ESP.getSketchMD5();
+				//HTTPClient http;
+				//http.begin(url);
+				//http.POST(mfrc522->uid.uidByte, mfrc522->uid.size);
+				//http.end();
+
+			}
+		}
 	}
 }

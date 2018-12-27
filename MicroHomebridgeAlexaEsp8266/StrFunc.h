@@ -5,6 +5,7 @@ public:
 	StrFunc();
 	~StrFunc();
 	static char* indexOf(char *, char*, size_t);
+	static char* indexOf(char *, char*, size_t, size_t);
 	static char* substrdup(char *, size_t );
 	static int commaCount(char*);
 
@@ -68,6 +69,38 @@ char* StrFunc::indexOf(char* buf, char*needle, size_t buflen)
 
 	return 0;
 }
+
+char* StrFunc::indexOf(char* buf, char*needle, size_t buflen, size_t needlelen)
+{
+	if (needlelen == 0) return 0;
+	size_t bufpospo = 0;
+	size_t needlepos = 0;
+	size_t scanpos;
+	while (bufpospo < buflen)
+	{
+		scanpos = bufpospo;
+		needlepos = 0;
+		while (buf[scanpos] == needle[needlepos])
+		{
+			scanpos++;
+			needlepos++;
+			if (needlepos == needlelen)
+			{
+				return buf + bufpospo;
+			}
+
+			if (scanpos >= buflen)
+			{
+				return 0;
+			}
+		}
+
+		bufpospo++;
+	}
+
+	return 0;
+}
+
 
 int StrFunc::commaCount(char *buf)
 {
