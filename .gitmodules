@@ -10,3 +10,6 @@
 [submodule "libraries/rcswitch"]
 	path = libraries/rcswitch
 	url = https://github.com/sui77/rc-switch.git
+[submodule "libraries/rfid"]
+	path = libraries/rfid
+	url = https://github.com/miguelbalboa/rfid.git

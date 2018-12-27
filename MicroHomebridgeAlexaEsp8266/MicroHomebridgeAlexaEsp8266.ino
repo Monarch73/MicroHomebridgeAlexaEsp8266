@@ -174,9 +174,6 @@ void EnterApMode()
 	web->begin();
 }
 
-void messageReceived(String &topic, String &payload) {
-	Serial.println("incoming: " + topic + " - " + payload);
-}
 void setup_wifi() {
 	delay(10);
 	// We start by connecting to a WiFi network
@@ -339,7 +336,7 @@ void setup() {
 	Serial.println(zahl);
 	myIr = new IRsend(3);
 	myIr->begin();
-	mySwitch.enableTransmit(2);
+	mySwitch.enableTransmit(5);
 	estore = new Estore(); // &estore2;
 	if (zahl > 350)
 	{
