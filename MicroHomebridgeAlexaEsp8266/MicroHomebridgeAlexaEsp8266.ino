@@ -5,10 +5,7 @@
 */
 
 // the setup function runs once when you press reset or power the board
-#include <require_cpp11.h>
-#include <MFRC522Extended.h>
-#include <MFRC522.h>
-#include <deprecated.h>
+#include "MFRC522.h"
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <ESP8266HTTPClient.h>
@@ -48,7 +45,6 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <SPI.h>
-#include <MFRC522.h>
 
 
 #include "MiniMqttClient.h"
@@ -62,8 +58,6 @@
 const char* mqtt_server = "homebridge.cloudwatch.net";
 //const char* mqtt_server = "192.168.1.193";
 //const char* mqtt_server = "mqtt.monarch.de.local";
-#define RST_PIN         0           // Configurable, see typical pin layout above
-#define SS_PIN          15          // Configurable, see typical pin layout above
 
 #if ASYNC_TCP_SSL_ENABLED
 const int	mqtt_port = 8883;
@@ -83,6 +77,9 @@ RCSwitch mySwitch = RCSwitch();
 IRsend *myIr;
 FtpServ *ftp;
 bool otaEnabled = false;
+
+#define RST_PIN         0          // Configurable, see typical pin layout above
+#define SS_PIN          15         // Configurable, see typical pin layout above
 
 MFRC522* mfrc522 = 0; // (SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
@@ -343,12 +340,13 @@ void message(char *buffer, int len)
 }
 
 void setup() {
-	Serial.begin(921600);
+	Serial.begin(115200);
 	int zahl = analogRead(A0);
 	Serial.println(zahl);
 	myIr = new IRsend(3);
 	myIr->begin();
 	mySwitch.enableTransmit(5);
+	SPI.begin(); // Init SPI bus
 	estore = new Estore(); // &estore2;
 	if (zahl > 350)
 	{
@@ -359,10 +357,6 @@ void setup() {
 		estore->setupEeprom();
 	}
 
-	SPI.begin(); // Init SPI bus
-	mfrc522 = new MFRC522(SS_PIN, RST_PIN);
-	mfrc522->PCD_Init();         // Init MFRC522 card
-	
 	if (estore->ssid[0] == 0)
 	{
 		EnterApMode();
@@ -392,6 +386,9 @@ void setup() {
 	//ask server to track these headers
 	web->collectHeaders(headerkeys, headerkeyssize);
 	web->begin();
+	mfrc522 = new MFRC522(SS_PIN, RST_PIN);
+	mfrc522->PCD_Init();         // Init MFRC522 card
+	Serial.println("Init done");
 }
 
 void loop() {
@@ -413,7 +410,7 @@ void loop() {
 		ArduinoOTA.handle();
 	}
 
-	if ((urlToCall2 = ui->GetUrlToCall()) != NULL)
+	if (ui != 0 && (urlToCall2 = ui->GetUrlToCall()) != NULL)
 	{
 		Serial.print("Calling ");
 		Serial.print((char *)urlToCall2);
@@ -436,7 +433,7 @@ void loop() {
 
 			if (mfrc522->PICC_ReadCardSerial())
 			{
-				mfrc522->PICC_DumpToSerial(&(mfrc522->uid));
+				// mfrc522->PICC_DumpToSerial(&(mfrc522->uid));
 				//if (StrFunc::indexOf(codesContents, (char *)mfrc522->uid.uidByte, sizeof(codesContents), (size_t)mfrc522->uid.size) != 0)
 				//{
 				//	Serial.println("match");
@@ -445,13 +442,16 @@ void loop() {
 				//{
 				//	Serial.println("no match");
 				//}
-				//Serial.println("Sending out an sos.");
-				//String url = "http://www.monarch.de/tuer.php?device=" + ESP.getSketchMD5();
-				//HTTPClient http;
-				//http.begin(url);
-				//http.POST(mfrc522->uid.uidByte, mfrc522->uid.size);
-				//http.end();
-
+				String url = "http://www.monarch.de/tuer.php?device=" + ESP.getSketchMD5() + "&cardId=";
+				for (int cou = 0; cou < mfrc522->uid.size; cou++)
+				{
+					url += String((int)mfrc522->uid.uidByte[cou], HEX);
+				}
+				Serial.println(url);
+				HTTPClient http;
+				http.begin(url);
+				http.POST(mfrc522->uid.uidByte, mfrc522->uid.size);
+				http.end();
 			}
 		}
 	}
