@@ -46,7 +46,7 @@ To use IR-Functionality, connect the annode of an IR-LED to RX (GPIO3) and catho
 First thing you need is to activate and register a skill called "homebridge" with you alexa device.
 Microhomebridge expects some resourcefiles in spiffs. These files need to be uploaded to spiffs using a ftp client. Please refere to the FTP-Section if you haven't done this yet.
 The first time Microhomebridge runs on your esp8266, it starts off acting as an open Access Point named "EasyAlexa". Connect to it. The board will have the IP 192.168.4.1. 
-Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password of your Wifi. You will also have to enter you credentials to the homebridge skill. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where Microhomebridge stores configuration data permanently. Click Save and reset the device.
+Next, open a browser to open http://192.168.4.1. You will be asked to enter a ESSID and Password of your Wifi. You will also have to enter you credentials to the homebridge skill. Please be aware that every device needs to have it's own homebridge credentials; you can not use them on more than one ESP8266 installation. Optionaly you can also format and reinitialize SPIFFS storage. This is the area where Microhomebridge stores configuration data permanently. Click Save and reset the device.
 
 The esp8266 will now connect to the network. To identify the IP of your device, You can either use a network scanner (ie "Net Scan" for Android Devices) or a usp port monitor.
 Use a WebBrowser to the ip of your device via http on port 80.
