@@ -232,7 +232,7 @@ void connect() {
 char *getMessageStampDup(char *buffer, int len)
 {
 	char *messageId = (char*)"\"messageId\":\"";
-	char *endCorrelationId = (char*)"=\"}";
+	char *endCorrelationId = (char*)"\"}";
 	char *startMessageId = StrFunc::indexOf(buffer, messageId, len);
 	if (!startMessageId)
 	{
@@ -248,8 +248,8 @@ char *getMessageStampDup(char *buffer, int len)
 		while (true);
 	}
 	Serial.println(system_get_free_heap_size());
-	char *messageStamp = StrFunc::substrdup(startMessageId, (endCorrelationIdPos - startMessageId) + 2);
-	return messageStamp;
+	char *messageStamp = StrFunc::substrdup(startMessageId, (endCorrelationIdPos - startMessageId) + 1);
+    return messageStamp;
 }
 
 int getNumber(char *buffer, int len)
@@ -274,7 +274,7 @@ int getNumber(char *buffer, int len)
 	return number;
 }
 
-void message(char *buffer, int len)
+void message(char *buffer, size_t len)
 {
 
 	char *posbuf;
@@ -312,7 +312,6 @@ void message(char *buffer, int len)
 		int number = getNumber(buffer,len);
 		estore->dipSwitchLoad(number, &dp);
 		remote->Send(&dp, number, onoff);
-
 		char *messageStamp = getMessageStampDup(buffer, len);
 		if (messageStamp)
 		{
@@ -331,6 +330,56 @@ void message(char *buffer, int len)
 			free(messageStamp);
 		}
 	}
+}
+
+void PrintHex8(uint8_t *data, size_t length) // prints 8-bit data in hex with leading zeroes
+{
+	int y = 0;
+	int i = 0;
+	Serial.println("");
+	Serial.print("Dumping bytes:");
+	Serial.println(length);
+	for (i = 0; i < length; i++) {
+		if (data[i] < 0x10) { Serial.print("0"); }
+		Serial.print(data[i], HEX);
+		Serial.print(" ");
+		if (i != 0 && i % 16 == 0)
+		{
+			Serial.print("   ");
+			while (y != i)
+			{
+				if (data[y] > 31 && data[y]<127)
+				{
+					Serial.print((char)data[y]);
+				}
+				else
+				{
+					Serial.print(".");
+
+				}
+				y++;
+			}
+
+			Serial.println("");
+		}
+	}
+	Serial.print("   ");
+	while (y != i)
+	{
+		if (data[y] > 31 && data[y] < 127)
+		{
+			Serial.print((char)data[y]);
+		}
+		else
+		{
+			Serial.print(".");
+
+		}
+		y++;
+	}
+
+	Serial.println("");
+
 }
 
 void setup() {

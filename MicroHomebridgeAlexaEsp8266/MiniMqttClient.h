@@ -32,11 +32,11 @@ private:
 	int _port;
 	AsyncClient* _client;
 	int _currentState;
-	std::function<void(char*,int)> _onMessage;
+	std::function<void(char*,size_t)> _onMessage;
 	static MiniMqttClient* _myinstance;
 	static char* _rcvbuffer;
-	static volatile size_t _oldlen;
-	static volatile size_t _remain;
+	static volatile size_t _writepointer;
+	static volatile size_t _messagelen;
 	static size_t _rcvbufferlen;
 
 	void ensureAllocRcvBuffer(size_t remain)
@@ -111,8 +111,8 @@ private:
 		Serial.println(len);
 		if (_myinstance->_currentState == waitingformore)
 		{
-			memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_oldlen, rcvbuffer, len);
-			MiniMqttClient::_oldlen += len;
+			memcpy(MiniMqttClient::_rcvbuffer + MiniMqttClient::_writepointer, rcvbuffer, len);
+			MiniMqttClient::_writepointer += len;
 			return;
 		}
 		if (len > 3 && rcvbuffer[0] == MQTTSTATUS_CONNACK && rcvbuffer[3] == 0)
@@ -140,8 +140,8 @@ private:
 				_myinstance->ensureAllocRcvBuffer(remain);
 
 				memcpy(MiniMqttClient::_rcvbuffer, rcvbuffer, len);
-				MiniMqttClient::_oldlen = len;
-				MiniMqttClient::_remain = remain;
+				MiniMqttClient::_writepointer = len;
+				MiniMqttClient::_messagelen = remain;
 				_myinstance->_currentState = waitingformore;
 				return;
 			}
@@ -175,7 +175,7 @@ public:
 		this->_sender = new MiniMqttClientSender(clientId, username, password);
 	}
 
-	void setCallback(std::function<void(char*,int)> callback)
+	void setCallback(std::function<void(char*,size_t)> callback)
 	{
 		this->_onMessage = callback;
 	}
@@ -238,20 +238,20 @@ public:
 
 			if (this->_currentState == waitingformore)
 			{
-				if (MiniMqttClient::_oldlen >= MiniMqttClient::_remain + 3)
+				if (MiniMqttClient::_writepointer >= MiniMqttClient::_messagelen + 3)
 				{
 					// message received
 					if (this->_onMessage != 0)
 					{
 						if (this->_sender->allFilesLoaded)
 						{
-							this->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_remain + 3);
+							this->_onMessage(MiniMqttClient::_rcvbuffer, MiniMqttClient::_messagelen + 3);
 						}
 
 						this->_currentState = doingnil;
-						if (MiniMqttClient::_oldlen > MiniMqttClient::_remain + 3)
+						if (MiniMqttClient::_writepointer > MiniMqttClient::_messagelen + 3)
 						{
-							this->handleData(0, 0, MiniMqttClient::_rcvbuffer + MiniMqttClient::_remain + 3, MiniMqttClient::_oldlen - (MiniMqttClient::_remain + 3));
+							this->handleData(0, 0, MiniMqttClient::_rcvbuffer + MiniMqttClient::_messagelen + 3, MiniMqttClient::_writepointer - (MiniMqttClient::_messagelen + 3));
 							// there is more to handle
 						}
 					}
@@ -268,6 +268,6 @@ public:
 
 MiniMqttClient* MiniMqttClient::_myinstance;
 char* MiniMqttClient::_rcvbuffer;
-volatile size_t MiniMqttClient::_oldlen;
-volatile size_t MiniMqttClient::_remain;
+volatile size_t MiniMqttClient::_writepointer;
+volatile size_t MiniMqttClient::_messagelen;
 size_t MiniMqttClient::_rcvbufferlen;
