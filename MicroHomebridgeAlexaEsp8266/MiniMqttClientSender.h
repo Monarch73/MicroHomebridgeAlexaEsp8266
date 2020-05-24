@@ -1,8 +1,10 @@
 #pragma once
 
 enum State { initialzed = 0, waitingForConnect, waitingForConnectACK, doingnil, waitingformore, waitingforack, readytosend };
+char *doorbellname = "Haust\xc3\xbcr";
 struct structJsonFiles {
 	char *discoverydevice;
+	char *discoverydevicedoorbell;
 	char *discoveryfooter;
 	char *discoveryheader;
 	char *state;
@@ -204,12 +206,14 @@ public:
 		for (std::map<char *, int>::iterator it = deviceList.begin(); it != deviceList.end(); )
 		{
 			lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, formatdevice, it->first, it->second);
-			if (++it != deviceList.end())
-			{
+			++it;
+			//if (++it != deviceList.end())
+			//{
 				_sendbuffer[lenTopic] = ',';
 				lenPayload++;
-			}
+			//}
 		}
+		lenPayload += addDiscoveryDevice(_sendbuffer + lenTopic, this->_allFiles->discoverydevicedoorbell, doorbellname, 99);
 		lenPayload += addDiscoveryFooter(_sendbuffer + lenTopic, formatfooter);
 
 		int len = 0;
@@ -222,12 +226,13 @@ public:
 		for (std::map<char *, int>::iterator it = deviceList.begin(); it != deviceList.end(); )
 		{
 			len += addDiscoveryDevice(_sendbuffer + len, formatdevice, it->first, it->second);
-			if (++it != deviceList.end())
-			{
+			++it;
+			//if (++it != deviceList.end())
+			//{
 				_sendbuffer[len++] = ',';
-			}
+			//}
 		}
-
+		len += addDiscoveryDevice(_sendbuffer+len, this->_allFiles->discoverydevicedoorbell, doorbellname, 99);
 		len += addDiscoveryFooter(_sendbuffer + len, formatfooter);
 		this->stageSender(len);
 	}
@@ -241,6 +246,7 @@ public:
 		MiniMqttClientSender::_myinstance = this;
 		this->_allFiles = (structJsonFiles*)malloc(sizeof(structJsonFiles));
 		this->_allFiles->discoverydevice = this->loadFileFromSpiffs((char*)"/discoverydevice.json");
+		this->_allFiles->discoverydevicedoorbell = this->loadFileFromSpiffs((char*)"/discoverydevicedoorbell.json");
 		this->_allFiles->discoveryfooter = this->loadFileFromSpiffs((char*)"/discoveryfooter.json");
 		this->_allFiles->discoveryheader = this->loadFileFromSpiffs((char*)"/discoveryheader.json");
 		this->_allFiles->switchjson = this->loadFileFromSpiffs((char*)"/switch.json");
@@ -273,7 +279,7 @@ public:
 
 
 
-		this->allFilesLoaded = (this->_allFiles->discoverydevice != 0 && this->_allFiles->discoveryfooter != 0 && this->_allFiles->discoveryheader != 0 && this->_allFiles->switchjson != 0 && this->_allFiles->state != 0);
+		this->allFilesLoaded = (this->_allFiles->discoverydevice != 0 && this->_allFiles->discoveryfooter != 0 && this->_allFiles->discoveryheader != 0 && this->_allFiles->switchjson != 0 && this->_allFiles->state != 0 && this->_allFiles->discoverydevicedoorbell != 0);
 
 		Serial.print("all files loaded: ");
 		Serial.println(this->allFilesLoaded);
